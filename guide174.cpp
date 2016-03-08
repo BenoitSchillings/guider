@@ -225,20 +225,25 @@ void hack_gain_upd()
 
 //--------------------------------------------------------------------------------------
 
+void ui_setup()
+{
+        namedWindow("video", 1);
+        createTrackbar("gain", "video", 0, 600, 0);
+        createTrackbar("exp", "video", 0, 256, 0);
+        createTrackbar("mult", "video", 0, 100, 0);
+        createTrackbar("Sub", "video", 0, 500, 0);
+        setTrackbarPos("gain", "video", 130);
+        setTrackbarPos("exp", "video", 8);
+        setTrackbarPos("mult", "video", 10.0);
+}
+
+//--------------------------------------------------------------------------------------
 
 int main()
 {
 	Guider *g;
 
-    	namedWindow("video", 1);
-   	createTrackbar("gain", "video", 0, 600, 0);
-    	createTrackbar("exp", "video", 0, 256, 0);
-    	createTrackbar("mult", "video", 0, 100, 0);
-    	createTrackbar("Sub", "video", 0, 500, 0);
-
-    	setTrackbarPos("gain", "video", 130);
-    	setTrackbarPos("exp", "video", 8);
-    	setTrackbarPos("mult", "video", 10.0);
+	ui_setup();
 
 	g = new Guider();
 
