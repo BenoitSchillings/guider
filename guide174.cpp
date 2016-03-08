@@ -37,7 +37,7 @@ public:
 	Mat	temp_image;	
 	int	ref_x;
 	int	ref_y;
-
+	int	guide_box_size;
 private:
 	void 	InitCam(int cx, int cy, int width, int height);
 	
@@ -45,6 +45,7 @@ public:
 	void 	Centroid(float*cx, float*cy, float*total_v);
 	bool 	HasGuideStar();
 	void	InitGuideStar();
+	Mat	GuideCrop();
 };
 
 
@@ -65,6 +66,8 @@ void cvText(Mat img, const char* text, int x, int y)
 
    	image = Mat(Size(width, height), CV_16UC1);
 	temp_image = Mat(Size(width, height), CV_16UC1);
+
+	guide_box_size = 14;
 
 	ref_x = -1;
 	ref_y = -1;
@@ -90,8 +93,8 @@ void Guider::InitGuideStar()
 	int	max = 0;
 
 
-	for (y = 2*BOX_HALF; y < height-2*BOX_HALF; y++) {
-		for (x = 2*BOX_HALF; x < width-2*BOX_HALF; x++) {
+	for (y = 2*guide_box_size; y < height - 2*guide_box_size; y++) {
+		for (x = 2*guide_box_size; x < width - 2*guide_box_size; x++) {
 			int v = image.at<unsigned short>(y, x);
  			if (v > max) {
 				max = v;
@@ -150,8 +153,8 @@ void Guider::Centroid(float*cx, float*cy, float*total_v)
    cnt = 0.0;
 
    for (int j = 0; j < 4; j++) 
-   for (int i = 0; i < BOX_HALF * 2; i++) { 
-   	bias +=  image.at<unsigned short>(ref_y + i - BOX_HALF, ref_x - BOX_HALF - j);
+   for (int i = 0; i < guide_box_size; i++) { 
+   	bias +=  image.at<unsigned short>(ref_y + i - guide_box_size/2, ref_x - guide_box_size/2 - j);
   	cnt+= 1.0; 
    } 
    bias /= cnt;
@@ -161,8 +164,8 @@ void Guider::Centroid(float*cx, float*cy, float*total_v)
     float sum_y = 0;
     float total = 0;
 
-    for (vy = ref_y - BOX_HALF; vy <= ref_y + BOX_HALF; vy++) {
-        for (vx = ref_x - BOX_HALF; vx <= ref_x + BOX_HALF; vx++) {
+    for (vy = ref_y - guide_box_size/2; vy <= ref_y + guide_box_size/2; vy++) {
+        for (vx = ref_x - guide_box_size/2; vx <= ref_x + guide_box_size/2; vx++) {
             float v = image.at<unsigned short>(vy, vx);
 	    v -= bias; 
 	    if (v > 0) {
@@ -188,6 +191,17 @@ void Guider::GetFrame()
         do {
             got_it = getImageData(image.ptr<uchar>(0), width * height * sizeof(PTYPE), 20);
         } while(!got_it);
+}
+
+//--------------------------------------------------------------------------------------
+
+Mat Guider::GuideCrop()
+{
+    Mat tmp;
+
+    tmp = Mat(image, Rect(ref_x - guide_box_size, ref_y - guide_box_size, guide_box_size*2, guide_box_size * 2));
+    resize(tmp, tmp, Size(0, 0), 6, 6, INTER_NEAREST);
+    return tmp;
 }
 
 //--------------------------------------------------------------------------------------
@@ -230,6 +244,8 @@ int main()
 
 	startCapture();
 
+	Mat zoom;
+
 	while(1) {
 		g->GetFrame();
                 
@@ -250,6 +266,7 @@ int main()
 			g->Centroid(&cx, &cy, &total_v);
 			if (total_v > 0) {
 			}
+			cv::imshow("guide", g->GuideCrop());	
 		}
 
 
