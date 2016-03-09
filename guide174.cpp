@@ -19,6 +19,11 @@ using namespace std;
 #define BOX_HALF 7 // Centroid box half width/height
 //--------------------------------------------------------------------------------------
 
+
+float  g_gain = 150.0;
+float  g_mult = 2.0;
+float  g_exp = 0.1;
+
 float gain0 = -1;
 float exp0 = -1;
 
@@ -32,22 +37,23 @@ void blit(Mat from, Mat to, int x1, int y1, int w, int h, int dest_x, int dest_y
 	int	rowbyte_source = from.step/2;
 	int	rowbyte_dest = to.step/2;
 
-	if ((dest_x + w) > to.cols) {
-		w = to.cols - dest_x;	
-	}
-	if ((dest_y + h) > to.rows) {
-		h = to.rows - dest_y;
-	}
-
-	if ((x1 + w) > from.cols) {
-		w = from.cols - x1;	
+	if ((dest_x + w) >= to.cols) {
+		w = -1 + to.cols - dest_x;	
 	}
 	
-	if ((y1 + h) > from.rows) {
-		h = from.rows - y1;	
+	if ((dest_y + h) >= to.rows) {
+		h = -1 + to.rows - dest_y;
 	}
 
-	for (int y = y1; y < y1 + w; y++) {
+	if ((x1 + w) >= from.cols) {
+		w = -1 + from.cols - x1;	
+	}
+	
+	if ((y1 + h) >= from.rows) {
+		h = -1 + from.rows - y1;	
+	}
+	
+	for (int y = y1; y < y1 + h; y++) {
 		int	dest_yc = dest_y + y;
 	
 		int off_y_dst = rowbyte_dest * dest_yc + dest_x + x1;
@@ -74,6 +80,9 @@ public:
 	int	ref_x;
 	int	ref_y;
 	int	guide_box_size;
+
+	float	gain;
+	float	exp;
 private:
 	void 	InitCam(int cx, int cy, int width, int height);
 	
@@ -90,7 +99,7 @@ public:
 
 void cvText(Mat img, const char* text, int x, int y)
 {
-    putText(img, text, Point2f(x, y), FONT_HERSHEY_PLAIN, 1, CV_RGB(62000, 62000, 62000), 1, 8);
+    	putText(img, text, Point2f(x, y), FONT_HERSHEY_PLAIN, 1, CV_RGB(62000, 62000, 62000), 1, 8);
 }
 
 //--------------------------------------------------------------------------------------
@@ -99,7 +108,7 @@ void DrawVal(Mat img, const char* title, float value, int x, int y, const char *
 {
 	char	buf[512];
 
-	sprintf(buf, "%s=%f %s", title, value, units);
+	sprintf(buf, "%s=%3.3f %s", title, value, units);
 	cvText(img, buf, x, y);
 }
 
@@ -267,12 +276,11 @@ Mat Guider::GuideCrop()
 
 //--------------------------------------------------------------------------------------
 
-void hack_gain_upd()
+void hack_gain_upd(Guider *aguide)
 {
         float gain = cvGetTrackbarPos("gain", "video");
         float exp = cvGetTrackbarPos("exp", "video");
-        exp = exp / 128.0;
-        exp = exp * exp;
+        exp = exp / 100.0;
         
 	if (exp0 != exp || gain0 != gain) {
             setValue(CONTROL_GAIN, gain, false);
@@ -280,6 +288,8 @@ void hack_gain_upd()
             setValue(CONTROL_BRIGHTNESS, 200, false);
             gain0 = gain;
             exp0 = exp;
+    	    aguide->gain = gain;
+	    aguide->exp = exp;
         }
 }
 
@@ -289,66 +299,109 @@ void ui_setup()
 {
         namedWindow("video", 1);
         createTrackbar("gain", "video", 0, 600, 0);
-        createTrackbar("exp", "video", 0, 256, 0);
+        createTrackbar("exp", "video", 0, 100, 0);
         createTrackbar("mult", "video", 0, 100, 0);
         createTrackbar("Sub", "video", 0, 500, 0);
-        setTrackbarPos("gain", "video", 130);
-        setTrackbarPos("exp", "video", 8);
-        setTrackbarPos("mult", "video", 10.0);
+        
+	setTrackbarPos("gain", "video", g_gain);
+        setTrackbarPos("exp", "video", 100.0 * g_exp);
+        setTrackbarPos("mult", "video", g_mult);
 }
 
 //--------------------------------------------------------------------------------------
 
-int main()
+
+int find_guide()
 {
-	Guider *g;
+    Guider *g;
+    
+    g = new Guider();
+    
+    ui_setup();
+    hack_gain_upd(g);
+    
+    startCapture();
+    
+    
+    while(1) {
+        
+        g->GetFrame();
+        DrawVal(g->image, "exp ", g->exp, 20, 20, "msec");
+        DrawVal(g->image, "gain", g->gain, 20, 40, "");
+        
+        cv::imshow("video", g->image  * (0.1 + cvGetTrackbarPos("mult", "video")));
+        char c = cvWaitKey(1);
+        hack_gain_upd(g);
+        if (c == 27) {
+            stopCapture();
+            return 0; 
+        }
+    }
+}
+
+//--------------------------------------------------------------------------------------
+
+int graphic_test()
+{
+        Guider *g = new Guider();
+
+        ui_setup();
+        hack_gain_upd(g);
+
+        startCapture();
+
+        Mat zoom;
+
+
+        Mat uibm = Mat(Size(1200, 800), CV_16UC1);
+
+
+        while(1) {
+                rectangle(uibm,
+                          Point( 0, 0),
+                          Point(300, 300),
+                          Scalar(0, 0, 0),
+                          -1,
+                          8);
+
+                blit(0.3 * g->image, uibm, 0, 0, 2300, 2300, 50, 50);
+
+                DrawVal(uibm, "exp ", g->exp, 20, 20, "msec");
+                DrawVal(uibm, "gain", g->gain, 20, 40, "");
+
+                cv::imshow("video", uibm);
+
+                char c = cvWaitKey(1);
+                hack_gain_upd(g);
+        }
+}
+
+//--------------------------------------------------------------------------------------
+
+int guide()
+{
+	Guider *g = new Guider();
 
 	ui_setup();
-
-	g = new Guider();
+	hack_gain_upd(g);
 
 	startCapture();
 
 	Mat zoom;
 	
 
-        Mat uibm = Mat(Size(1200, 800), CV_16UC1);
-
-
-	while(1) {
-		rectangle(uibm,
-           		  Point( 0, 0),
-           		  Point(300,300),
-           		  Scalar( 3000, 1130, 1130),
-           		  -1,
-           		  8);
-
-		blit(g->image, uibm, 0, 0, 300, 300, 50, 50);
-	
-		//g->image(Rect(0, 0, 200, 200)).copyTo(uibm);	
-		DrawVal(uibm, "exp", exp0, 20, 20, "msec");
-		
-
-		cv::imshow("video", uibm);	
-		//cv::imshow("video", g->image * (0.1 + cvGetTrackbarPos("mult", "video")));	
-		char c = cvWaitKey(1);	
-		hack_gain_upd();	
-	}
-
-	
 	while(1) {
 		g->GetFrame();
 		if (!g->HasGuideStar()) {
 			g->InitGuideStar();
 		}
 
-		hack_gain_upd();
 
                 DrawVal(g->image, "exp", exp0, 20, 20, "msec");
 	
  		cv::imshow("video", g->image  * (0.1 + cvGetTrackbarPos("mult", "video")));
           	char c = cvWaitKey(1);
-		hack_gain_upd();
+		hack_gain_upd(g);
 
 		if (g->HasGuideStar()) {
 			float cx;
@@ -368,5 +421,54 @@ int main()
 			return 0;
 		}
 	}
+}
+
+//--------------------------------------------------------------------------------------
+
+bool match(char *s1, const char *s2)
+{
+	return(strncmp(s1, s2, strlen(s2)) == 0);
+}
+
+//--------------------------------------------------------------------------------------
+
+void help(char **argv)
+{
+                printf("%s -h        print this help\n", argv[0]);
+                printf("%s -f        full field find star\n", argv[0]);
+                printf("%s -g        acquire guide star and guide\n", argv[0]);
+                printf("exta args\n");
+                printf("-gain=value\n");
+                printf("-exp=value (in sec)\n");
+                printf("-mult=value\n");
+}
+
+//--------------------------------------------------------------------------------------
+
+
+int main(int argc, char **argv)
+{
+        Guider *g;
+	
+        if (argc == 1 || strcmp(argv[1], "-h") == 0) {
+               	help(argv);
+       		return 0; 
+	}
+
+	int pos = 1;
+	
+	while(pos < argc) {
+		if (match(argv[pos], "-gain=")) {sscanf(strchr(argv[pos], '=') , "=%f",  &g_gain); argv[pos][0] = 0;}
+        	if (match(argv[pos], "-exp="))  {sscanf(strchr(argv[pos], '=') , "=%f",  &g_exp); argv[pos][0] = 0;}
+        	if (match(argv[pos], "-mult=")) {sscanf(strchr(argv[pos], '=') , "=%f",  &g_mult); argv[pos][0] = 0;}
+		pos++;
+	}
+        pos = 1;
+
+        while(pos < argc) {
+                if (match(argv[pos], "-f")) return(find_guide());;
+                if (match(argv[pos], "-g")) return(guide()); 
+		pos++;
+        }
 }
 
