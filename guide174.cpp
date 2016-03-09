@@ -67,6 +67,39 @@ void blit(Mat from, Mat to, int x1, int y1, int w, int h, int dest_x, int dest_y
 
 //--------------------------------------------------------------------------------------
 
+void cvText(Mat img, const char* text, int x, int y)
+{
+        putText(img, text, Point2f(x, y), FONT_HERSHEY_PLAIN, 1, CV_RGB(62000, 62000, 62000), 1, 8);
+}
+
+//--------------------------------------------------------------------------------------
+
+void DrawVal(Mat img, const char* title, float value, int y, const char *units)
+{
+        char    buf[512];
+
+        y *= 30;
+        y += 35;
+        int x = 60;
+
+        rectangle(img,
+                  Point(x - 7, y - 16), Point(x + 300, y + 6),
+                  Scalar(9000, 9000, 9000),
+                  -1,
+                  8);
+
+        rectangle(img,
+                  Point(x - 7, y - 16), Point(x + 300, y + 6),
+                  Scalar(20000, 20000, 20000),
+                  1,
+                  8);
+
+        sprintf(buf, "%s=%3.3f %s", title, value, units);
+        cvText(img, buf, x, y);
+}
+
+//--------------------------------------------------------------------------------------
+
 
 class Guider {
 public:	
@@ -85,6 +118,9 @@ public:
 	int	frame;
 	float	gain;
 	float	exp;
+	float	background;
+	float	dev;
+
 private:
 	void 	InitCam(int cx, int cy, int width, int height);
 	
@@ -93,43 +129,35 @@ public:
 	bool 	HasGuideStar();
 	bool 	InitGuideStar();
 	Mat	GuideCrop();
+	void	MinDev();
 };
 
 
 
 //--------------------------------------------------------------------------------------
 
-void cvText(Mat img, const char* text, int x, int y)
+void Guider::MinDev()
 {
-    	putText(img, text, Point2f(x, y), FONT_HERSHEY_PLAIN, 1, CV_RGB(62000, 62000, 62000), 1, 8);
+	float	background = 1e9;
+	float	count = 0;
+	float	sum = 0;
+
+	for (int y = 0; y < height; y += 20) {
+		for (int x = 0; x < width; x += 20) { 
+            		float v = image.at<unsigned short>(y, x);
+			float v1 = image.at<unsigned short>(y, x + 1);
+		
+			float v2 = (v + v1)/2.0;
+			if (v2 < background) background = v2;
+			count += 1;
+
+			v2 = (v1-v);
+			sum += (v2*v2);
+		}
+	}
+	sum = sum / count;
+	dev = sqrt(sum);	
 }
-
-//--------------------------------------------------------------------------------------
-
-void DrawVal(Mat img, const char* title, float value, int y, const char *units)
-{
-	char	buf[512];
-      
-  	y *= 30; 
-	y += 35;
-	int x = 60;
- 
-	rectangle(img,
-                  Point(x - 7, y - 16), Point(x + 300, y + 6),
-                  Scalar(9000, 9000, 9000),
-                  -1,
-                  8);
-        
-	rectangle(img,
-                  Point(x - 7, y - 16), Point(x + 300, y + 6),
-                  Scalar(20000, 20000, 20000),
-                  1,
-                  8);
-
-	sprintf(buf, "%s=%3.3f %s", title, value, units);
-	cvText(img, buf, x, y);
-}
-
 
 //--------------------------------------------------------------------------------------
 
@@ -138,6 +166,8 @@ void DrawVal(Mat img, const char* title, float value, int y, const char *units)
 	width = 1000;
 	height = 1000;
 	frame = 0;
+	background = 0;
+	dev = 100;
 
    	image = Mat(Size(width, height), CV_16UC1);
 	temp_image = Mat(Size(width, height), CV_16UC1);
@@ -371,7 +401,7 @@ int find_guide()
     while(1) {
         
         g->GetFrame();
-        DrawVal(g->image, "exp ", g->exp, 0, "msec");
+        DrawVal(g->image, "exp ", g->exp, 0, "sec");
         DrawVal(g->image, "gain", g->gain, 1, "");
         
         cv::imshow("video", g->image  * (0.1 * cvGetTrackbarPos("mult", "video")));
@@ -411,7 +441,7 @@ int graphic_test()
 
                 blit(0.3 * g->image, uibm, 0, 0, 2300, 2300, 50, 50);
 
-                DrawVal(uibm, "exp ", g->exp, 0, "msec");
+                DrawVal(uibm, "exp ", g->exp, 0, "sec");
                 DrawVal(uibm, "gain", g->gain, 1, "");
 
                 cv::imshow("video", uibm);
@@ -462,7 +492,7 @@ int guide()
 			DrawVal(uibm, "cy ", cy, 4, "");	
 		}
 		
-                DrawVal(uibm, "exp ", g->exp, 0, "msec");
+                DrawVal(uibm, "exp ", g->exp, 0, "sec");
                 DrawVal(uibm, "gain", g->gain, 1, "");
 
 
