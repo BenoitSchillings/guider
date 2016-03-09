@@ -5,8 +5,14 @@
 #include <time.h>
 #include <opencv2/core/core.hpp> 
 #include <opencv2/highgui/highgui.hpp>
+#include "./tiny/tinyxml.h"
 
 bool sim = true;
+
+//--------------------------------------------------------------------------------------
+
+float get_value(const char *name);
+void  set_value(const char *name, float value);
 
 //--------------------------------------------------------------------------------------
 
@@ -157,6 +163,7 @@ void Guider::MinDev()
 	}
 	sum = sum / count;
 	dev = sqrt(sum);	
+	printf("%f %f\n", background, dev);
 }
 
 //--------------------------------------------------------------------------------------
@@ -352,7 +359,9 @@ void hack_gain_upd(Guider *aguide)
         float gain = cvGetTrackbarPos("gain", "video");
         float exp = cvGetTrackbarPos("exp", "video");
         exp = exp / 100.0;
-        
+        g_exp = exp;
+	g_gain = gain;
+	g_mult = cvGetTrackbarPos("mult", "video")/10.0; 
 	if (exp0 != exp || gain0 != gain) {
            
 	    if (sim == 0) { 
@@ -401,7 +410,8 @@ int find_guide()
     while(1) {
         
         g->GetFrame();
-        DrawVal(g->image, "exp ", g->exp, 0, "sec");
+        g->MinDev(); 
+	DrawVal(g->image, "exp ", g->exp, 0, "sec");
         DrawVal(g->image, "gain", g->gain, 1, "");
         
         cv::imshow("video", g->image  * (0.1 * cvGetTrackbarPos("mult", "video")));
@@ -539,6 +549,10 @@ int main(int argc, char **argv)
 	}
 
 	int pos = 1;
+
+	g_exp = get_value("exp");
+	g_gain = get_value("gain");
+	g_mult = get_value("mult");
 	
 	while(pos < argc) {
 		if (match(argv[pos], "-gain=")) {sscanf(strchr(argv[pos], '=') , "=%f",  &g_gain); argv[pos][0] = 0;}
@@ -547,11 +561,18 @@ int main(int argc, char **argv)
 		pos++;
 	}
         pos = 1;
+	set_value("exp", g_exp);
+	set_value("gain", g_gain);
+	set_value("mult", g_mult);
 
         while(pos < argc) {
-                if (match(argv[pos], "-f")) return(find_guide());;
-                if (match(argv[pos], "-g")) return(guide()); 
+                if (match(argv[pos], "-f")) find_guide();
+                if (match(argv[pos], "-g")) guide(); 
 		pos++;
         }
+
+       set_value("exp", g_exp);
+       set_value("gain", g_gain);
+       set_value("mult", g_mult);
 }
 

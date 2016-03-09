@@ -4,6 +4,7 @@ platform = mac64
 CC = g++
 #INCLIB = /usr/local/include
 #LDLIB = /usr/local/lib
+TINY = tinyxmlerror.cpp.o tinystr.cpp.o tinyxmlparser.cpp.o tinyxml.cpp.o
 OPENCV = $(shell pkg-config --cflags opencv) $(shell pkg-config --libs opencv)
 #OPENCV = -I/usr/local/include/opencv -I/usr/local/include -L/usr/local/lib -lopencv_calib3d -lopencv_contrib -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_gpu -lopencv_highgui -lopencv_imgproc -lopencv_legacy -lopencv_ml -lopencv_nonfree -lopencv_objdetect -lopencv_photo -lopencv_stitching -lopencv_superres -lopencv_ts -lopencv_video -lopencv_videostab 
 
@@ -70,8 +71,20 @@ endif
 
 
 all:guide174
-guide174: guide174.cpp
-	$(CC) -march=native -O4 guide174.cpp -o guide174 $(CFLAGS)  $(OPENCV) -lASICamera
+guide174: guide174.cpp util.cpp tinystr.cpp.o tinyxmlparser.cpp.o tinyxml.cpp.o tinyxmlerror.cpp.o
+	$(CC) -march=native -O4 guide174.cpp util.cpp $(TINY) -o guide174 $(CFLAGS)  $(OPENCV) -lASICamera
+
+tinystr.cpp.o: ./tiny/tinystr.cpp
+	$(CC)  -c ./tiny/tinystr.cpp -o tinystr.cpp.o $(CFLAGS)
+
+tinyxml.cpp.o: ./tiny/tinyxml.cpp
+	$(CC)  -c ./tiny/tinyxml.cpp -o tinyxml.cpp.o $(CFLAGS)
+
+tinyxmlparser.cpp.o: ./tiny/tinyxmlparser.cpp
+	$(CC)  -c ./tiny/tinyxmlparser.cpp -o tinyxmlparser.cpp.o $(CFLAGS)
+
+tinyxmlerror.cpp.o: ./tiny/tinyxmlerror.cpp
+	$(CC)  -c ./tiny/tinyxmlerror.cpp -o tinyxmlerror.cpp.o $(CFLAGS)
 
 clean:
 	rm -f guide174 
