@@ -144,9 +144,10 @@ public:
 
 void Guider::MinDev()
 {
-	float	background = 1e9;
 	float	count = 0;
 	float	sum = 0;
+
+	background = 1e9;
 
 	for (int y = 0; y < height; y += 20) {
 		for (int x = 0; x < width; x += 20) { 
@@ -162,8 +163,8 @@ void Guider::MinDev()
 		}
 	}
 	sum = sum / count;
-	dev = sqrt(sum);	
-	printf("%f %f\n", background, dev);
+	dev = sqrt(sum);
+	background = background - 3.0*dev;
 }
 
 //--------------------------------------------------------------------------------------
@@ -263,7 +264,6 @@ void Guider::InitCam(int cx, int cy, int width, int height)
     setValue(CONTROL_EXPOSURE, 50, false);
     setValue(CONTROL_HIGHSPEED, 1, false);
     setStartPos(cx - width/2, cy-height/2);
-    printf("got it\n");
 }
 
 //--------------------------------------------------------------------------------------
@@ -411,13 +411,16 @@ int find_guide()
         
         g->GetFrame();
         g->MinDev(); 
+	g->image = g->image - g->background;	
+	g->image = g->image * (0.1 * cvGetTrackbarPos("mult", "video")); 	
 	DrawVal(g->image, "exp ", g->exp, 0, "sec");
         DrawVal(g->image, "gain", g->gain, 1, "");
         
-        cv::imshow("video", g->image  * (0.1 * cvGetTrackbarPos("mult", "video")));
+        cv::imshow("video", g->image);
         char c = cvWaitKey(1);
         hack_gain_upd(g);
-        if (c == 27) {
+        
+	if (c == 27) {
             stopCapture();
             return 0; 
         }
