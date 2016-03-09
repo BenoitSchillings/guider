@@ -6,6 +6,8 @@
 #include <opencv2/core/core.hpp> 
 #include <opencv2/highgui/highgui.hpp>
 
+bool sim = true;
+
 //--------------------------------------------------------------------------------------
 
 using namespace cv;
@@ -80,7 +82,7 @@ public:
 	int	ref_x;
 	int	ref_y;
 	int	guide_box_size;
-
+	int	frame;
 	float	gain;
 	float	exp;
 private:
@@ -119,25 +121,17 @@ void DrawVal(Mat img, const char* title, float value, int x, int y, const char *
 {
 	width = 1000;
 	height = 1000;
+	frame = 0;
 
    	image = Mat(Size(width, height), CV_16UC1);
 	temp_image = Mat(Size(width, height), CV_16UC1);
-
-	char buf[512];
-
-	for (int y = 0; y < height; y+=30) {
-		for (int x = 0; x < width; x+=100) {
-			sprintf(buf, "%d-%d", x, y);	
-			cvText(image, buf, x, y); 	
-		}
-	}
 
 	guide_box_size = 14;
 
 	ref_x = -1;
 	ref_y = -1;
-	
-	InitCam(0, 0, width, height);
+
+	if (!sim) InitCam(0, 0, width, height);
 }
 
 
@@ -155,10 +149,9 @@ void Guider::InitGuideStar()
 	GaussianBlur(image, temp_image, Point(7, 7), 5);	
 
 	int	x, y;
-	int	max = 50000;
+	int	max = 0;
 
 
-	printf("start\n");
 	for (y = 2*guide_box_size; y < height - 2*guide_box_size; y++) {
 		for (x = 2*guide_box_size; x < width - 2*guide_box_size; x++) {
 			int v = image.at<unsigned short>(y, x);
@@ -169,7 +162,7 @@ void Guider::InitGuideStar()
 			}	
 		}
 	}
-	printf("end\n");
+	printf("%d  %d\n", ref_x, ref_y);
 }
 
 
@@ -257,7 +250,31 @@ void Guider::Centroid(float*cx, float*cy, float*total_v)
 
 void Guider::GetFrame()
 {
-        bool got_it;
+     	frame++;
+ 
+	if (sim) {
+	
+               rectangle(image,
+                          Point( 0, 0),
+                          Point(1000, 1000),
+                          Scalar(0, 0, 0),
+                          -1,
+                          8);
+	
+       		char buf[512];
+
+        	for (int y = 0; y < height; y+=30) {
+                	for (int x = 0; x < width; x+=100) {
+                        	sprintf(buf, "%d", frame);
+                        	cvText(image, buf, x, y);
+                	}
+        	}
+	
+		return; 
+	
+	}
+ 
+	bool got_it;
         do {
             got_it = getImageData(image.ptr<uchar>(0), width * height * sizeof(PTYPE), 20);
         } while(!got_it);
@@ -283,10 +300,13 @@ void hack_gain_upd(Guider *aguide)
         exp = exp / 100.0;
         
 	if (exp0 != exp || gain0 != gain) {
-            setValue(CONTROL_GAIN, gain, false);
-            setValue(CONTROL_EXPOSURE, exp*1000000, false);
-            setValue(CONTROL_BRIGHTNESS, 200, false);
-            gain0 = gain;
+           
+	    if (sim == 0) { 
+       	    	setValue(CONTROL_GAIN, gain, false);
+            	setValue(CONTROL_EXPOSURE, exp*1000000, false);
+            	setValue(CONTROL_BRIGHTNESS, 200, false);
+            } 
+	    gain0 = gain;
             exp0 = exp;
     	    aguide->gain = gain;
 	    aguide->exp = exp;
@@ -305,7 +325,7 @@ void ui_setup()
         
 	setTrackbarPos("gain", "video", g_gain);
         setTrackbarPos("exp", "video", 100.0 * g_exp);
-        setTrackbarPos("mult", "video", g_mult);
+        setTrackbarPos("mult", "video", 10.0 *g_mult);
 }
 
 //--------------------------------------------------------------------------------------
@@ -329,7 +349,7 @@ int find_guide()
         DrawVal(g->image, "exp ", g->exp, 20, 20, "msec");
         DrawVal(g->image, "gain", g->gain, 20, 40, "");
         
-        cv::imshow("video", g->image  * (0.1 + cvGetTrackbarPos("mult", "video")));
+        cv::imshow("video", g->image  * (0.1 * cvGetTrackbarPos("mult", "video")));
         char c = cvWaitKey(1);
         hack_gain_upd(g);
         if (c == 27) {
@@ -384,6 +404,7 @@ int guide()
 
 	ui_setup();
 	hack_gain_upd(g);
+        Mat uibm = Mat(Size(1200, 800), CV_16UC1);
 
 	startCapture();
 
@@ -396,11 +417,19 @@ int guide()
 			g->InitGuideStar();
 		}
 
+                rectangle(uibm,
+                          Point( 0, 0),
+                          Point(300, 300),
+                          Scalar(0, 0, 0),
+                          -1,
+                          8);
 
-                DrawVal(g->image, "exp", exp0, 20, 20, "msec");
-	
- 		cv::imshow("video", g->image  * (0.1 + cvGetTrackbarPos("mult", "video")));
-          	char c = cvWaitKey(1);
+                blit(g->image   * (0.1 * cvGetTrackbarPos("mult", "video")), uibm, 0, 0, 2300, 2300, 50, 50);
+
+                DrawVal(uibm, "exp ", g->exp, 20, 20, "msec");
+                DrawVal(uibm, "gain", g->gain, 20, 40, "");
+                
+
 		hack_gain_upd(g);
 
 		if (g->HasGuideStar()) {
@@ -411,11 +440,12 @@ int guide()
 			g->Centroid(&cx, &cy, &total_v);
 			if (total_v > 0) {
 			}
-			float mult = 0.1 + cvGetTrackbarPos("mult", "video");	
-			cv::imshow("guide", mult * g->GuideCrop());	
+			float mult = 0.1 * cvGetTrackbarPos("mult", "video");	
+			blit(mult * g->GuideCrop(), uibm, 0, 0, 1000, 1000, 50, 50);	
 		}
+		cv::imshow("video", uibm);
 
-
+		char c = cvWaitKey(1);
 		if (c == 27) {
 			stopCapture();
 			return 0;
