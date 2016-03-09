@@ -24,6 +24,42 @@ float exp0 = -1;
 
 //--------------------------------------------------------------------------------------
 
+void blit(Mat from, Mat to, int x1, int y1, int w, int h, int dest_x, int dest_y)
+{
+	ushort *source = (ushort*)(from.data);
+	ushort *dest = (ushort*)(to.data);
+	
+	int	rowbyte_source = from.step/2;
+	int	rowbyte_dest = to.step/2;
+
+	if ((dest_x + w) > to.cols) {
+		w = to.cols - dest_x;	
+	}
+	if ((dest_y + h) > to.rows) {
+		h = to.rows - dest_y;
+	}
+
+	if ((x1 + w) > from.cols) {
+		w = from.cols - x1;	
+	}
+	
+	if ((y1 + h) > from.rows) {
+		h = from.rows - y1;	
+	}
+
+	for (int y = y1; y < y1 + w; y++) {
+		int	dest_yc = dest_y + y;
+	
+		int off_y_dst = rowbyte_dest * dest_yc + dest_x + x1;
+		int src_y_dst = rowbyte_source * y + x1;
+		
+		memcpy(dest + off_y_dst, source + src_y_dst, w*2);	
+	}
+}
+
+//--------------------------------------------------------------------------------------
+
+
 class Guider {
 public:	
 		Guider();
@@ -54,8 +90,19 @@ public:
 
 void cvText(Mat img, const char* text, int x, int y)
 {
-    putText(img, text, Point2f(x, y), FONT_HERSHEY_PLAIN, 1, CV_RGB(32000, 32000, 32000), 1, 8);
+    putText(img, text, Point2f(x, y), FONT_HERSHEY_PLAIN, 1, CV_RGB(62000, 62000, 62000), 1, 8);
 }
+
+//--------------------------------------------------------------------------------------
+
+void DrawVal(Mat img, const char* title, float value, int x, int y, const char *units)
+{
+	char	buf[512];
+
+	sprintf(buf, "%s=%f %s", title, value, units);
+	cvText(img, buf, x, y);
+}
+
 
 //--------------------------------------------------------------------------------------
 
@@ -66,6 +113,15 @@ void cvText(Mat img, const char* text, int x, int y)
 
    	image = Mat(Size(width, height), CV_16UC1);
 	temp_image = Mat(Size(width, height), CV_16UC1);
+
+	char buf[512];
+
+	for (int y = 0; y < height; y+=30) {
+		for (int x = 0; x < width; x+=100) {
+			sprintf(buf, "%d-%d", x, y);	
+			cvText(image, buf, x, y); 	
+		}
+	}
 
 	guide_box_size = 14;
 
@@ -90,9 +146,10 @@ void Guider::InitGuideStar()
 	GaussianBlur(image, temp_image, Point(7, 7), 5);	
 
 	int	x, y;
-	int	max = 0;
+	int	max = 50000;
 
 
+	printf("start\n");
 	for (y = 2*guide_box_size; y < height - 2*guide_box_size; y++) {
 		for (x = 2*guide_box_size; x < width - 2*guide_box_size; x++) {
 			int v = image.at<unsigned short>(y, x);
@@ -103,6 +160,7 @@ void Guider::InitGuideStar()
 			}	
 		}
 	}
+	printf("end\n");
 }
 
 
@@ -113,10 +171,12 @@ void Guider::InitCam(int cx, int cy, int width, int height)
 {
     int CamNum=0;
     bool bresult;
-    
+  
+ 
     int numDevices = getNumberOfConnectedCameras();
     if(numDevices <= 0) {
        	printf("no device\n"); 
+	return;	
 	exit(-1);
     }
     
@@ -140,6 +200,7 @@ void Guider::InitCam(int cx, int cy, int width, int height)
     setValue(CONTROL_EXPOSURE, 50, false);
     setValue(CONTROL_HIGHSPEED, 1, false);
     setStartPos(cx - width/2, cy-height/2);
+    printf("got it\n");
 }
 
 //--------------------------------------------------------------------------------------
@@ -212,11 +273,10 @@ void hack_gain_upd()
         float exp = cvGetTrackbarPos("exp", "video");
         exp = exp / 128.0;
         exp = exp * exp;
-        float mult = 0.1 + cvGetTrackbarPos("mult", "video");
-
-        if (exp0 != exp || gain0 != gain) {
+        
+	if (exp0 != exp || gain0 != gain) {
             setValue(CONTROL_GAIN, gain, false);
-            setValue(CONTROL_EXPOSURE, 0.0023*1000000, false);
+            setValue(CONTROL_EXPOSURE, exp*1000000, false);
             setValue(CONTROL_BRIGHTNESS, 200, false);
             gain0 = gain;
             exp0 = exp;
@@ -250,18 +310,45 @@ int main()
 	startCapture();
 
 	Mat zoom;
+	
+
+        Mat uibm = Mat(Size(1200, 800), CV_16UC1);
+
 
 	while(1) {
+		rectangle(uibm,
+           		  Point( 0, 0),
+           		  Point(300,300),
+           		  Scalar( 3000, 1130, 1130),
+           		  -1,
+           		  8);
+
+		blit(g->image, uibm, 0, 0, 300, 300, 50, 50);
+	
+		//g->image(Rect(0, 0, 200, 200)).copyTo(uibm);	
+		DrawVal(uibm, "exp", exp0, 20, 20, "msec");
+		
+
+		cv::imshow("video", uibm);	
+		//cv::imshow("video", g->image * (0.1 + cvGetTrackbarPos("mult", "video")));	
+		char c = cvWaitKey(1);	
+		hack_gain_upd();	
+	}
+
+	
+	while(1) {
 		g->GetFrame();
-                
 		if (!g->HasGuideStar()) {
 			g->InitGuideStar();
 		}
 
 		hack_gain_upd();
+
+                DrawVal(g->image, "exp", exp0, 20, 20, "msec");
 	
- 		cv::imshow("video", g->image);
+ 		cv::imshow("video", g->image  * (0.1 + cvGetTrackbarPos("mult", "video")));
           	char c = cvWaitKey(1);
+		hack_gain_upd();
 
 		if (g->HasGuideStar()) {
 			float cx;
@@ -271,7 +358,8 @@ int main()
 			g->Centroid(&cx, &cy, &total_v);
 			if (total_v > 0) {
 			}
-			cv::imshow("guide", g->GuideCrop());	
+			float mult = 0.1 + cvGetTrackbarPos("mult", "video");	
+			cv::imshow("guide", mult * g->GuideCrop());	
 		}
 
 
