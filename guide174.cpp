@@ -7,7 +7,23 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "./tiny/tinyxml.h"
 
-bool sim = true;
+bool sim = false;
+
+//----------- 
+// guide solving
+
+//Input interpretation:
+//solve a = x u+y v
+//b = x w+y z  for  x, y
+
+//Results:More rootsStep-by-step solution
+//x = (b v-a z)/(v w-u z) and y = (b u-a w)/(u z-v w) and v w!=u z and v!=0
+//x = a/u and y = (b u-a w)/(u z) and v = 0 and u!=0 and z!=0
+
+//y = (a-u x)/v and z = 0 and w = 0 and b = 0 and v!=0
+//y = (b-w x)/z and v = 0 and u = 0 and a = 0 and z!=0 and w!=0
+//y = b/z and w = 0 and u = 0 and z!=0 and a = (b v)/z and v!=0
+
 
 //--------------------------------------------------------------------------------------
 
@@ -136,6 +152,7 @@ public:
 	bool 	InitGuideStar();
 	Mat	GuideCrop();
 	void	MinDev();
+	void	Move(float dx, float dy);
 };
 
 
@@ -164,7 +181,6 @@ void Guider::MinDev()
 	}
 	sum = sum / count;
 	dev = sqrt(sum);
-	background = background - 3.0*dev;
 }
 
 //--------------------------------------------------------------------------------------
@@ -188,6 +204,27 @@ void Guider::MinDev()
 	if (!sim) InitCam(0, 0, width, height);
 }
 
+//--------------------------------------------------------------------------------------
+
+
+void	Guider::Move(float dx, float dy)
+{
+    if (dx > 0) {
+        pulseGuide(guideEast, dx*1000.0);
+    }
+    
+    if (dx < 0) {
+        pulseGuide(guideWest, -dx*1000.0);
+    }
+   
+    if (dy > 0) {
+        pulseGuide(guideNorth, dy*1000.0);
+    }
+    
+    if (dy < 0) {
+        pulseGuide(guideSouth, -dy*1000.0);
+    }
+}
 
 //--------------------------------------------------------------------------------------
 
@@ -273,6 +310,8 @@ void Guider::Centroid(float*cx, float*cy, float*total_v)
    float bias = 0;
    float cnt;
 
+   MinDev();
+   printf("%f %f\n", background, dev);
 
    cnt = 0.0;
 
@@ -282,27 +321,32 @@ void Guider::Centroid(float*cx, float*cy, float*total_v)
   	cnt+= 1.0; 
    } 
    bias /= cnt;
-   
-    int vx, vy;
-    float sum_x = 0;
-    float sum_y = 0;
-    float total = 0;
+   bias += dev * 3;
+   printf("%f\n", bias); 
+    
+   int vx, vy;
+   float sum_x = 0;
+   float sum_y = 0;
+   float total = 0;
+   int pcnt = 0;
 
     for (vy = ref_y - guide_box_size/2; vy <= ref_y + guide_box_size/2; vy++) {
         for (vx = ref_x - guide_box_size/2; vx <= ref_x + guide_box_size/2; vx++) {
             float v = image.at<unsigned short>(vy, vx);
-	    v -= bias; 
-	    if (v > 0) {
+	     v -= bias; 
+	     if (v > 0) {
                 sum_x = sum_x + (float)vx * v; 
                 sum_y = sum_y + (float)vy * v;
                 total = total + v;
-            }
+           	pcnt++; 
+	    }
         }
     }
     sum_x = sum_x / total;
     sum_y = sum_y / total;
     *cx = sum_x;
     *cy = sum_y;
+    printf("%f %d\n", total, pcnt); 
     *total_v = total;
 }
 
@@ -484,7 +528,7 @@ int guide()
 		if (!g->HasGuideStar()) {
 			blit(g->image   * (0.1 * cvGetTrackbarPos("mult", "video")), uibm, 0, 0, 2300, 2300, 0, 0);
 			if (g->InitGuideStar()) {
-				uibm = Mat(Size(300, 300), CV_16UC1);	
+				uibm = Mat(Size(400, 400), CV_16UC1);	
 			}	
 		}
 
@@ -521,6 +565,70 @@ int guide()
 
 //--------------------------------------------------------------------------------------
 
+
+int calibrate()
+{
+    Guider *g = new Guider();
+    float  x1, y1;
+    float  x2, y2; 
+    float  x3, y3; 
+    
+
+    ui_setup();
+    hack_gain_upd(g);
+    Mat uibm = Mat(Size(1200, 800), CV_16UC1);
+    
+    startCapture();
+    
+    Mat zoom;
+   
+
+//-----------------------------
+//   x1,y1 ------->x(5)-->x2,y2
+//                         |
+//                         | 
+//                         |
+//                         |
+//                        y(5)
+//                         |
+//                         |
+//                        x3,y3
+//     then move back x(-5), y(-5) 
+   
+ 
+    {
+        g->GetFrame();
+	g->InitGuideStar();
+        x1 = g->ref_x;
+	y1 = g->ref_y;
+	g->Move(5.0, 0);
+        blit(g->image   * (0.1 * cvGetTrackbarPos("mult", "video")), uibm, 0, 0, 2300, 2300, 0, 0);
+        char c = cvWaitKey(1);
+
+        g->GetFrame();
+        g->InitGuideStar();
+        x2 = g->ref_x;
+        y2 = g->ref_y;
+	g->Move(0.0, 5.0);
+        blit(g->image   * (0.1 * cvGetTrackbarPos("mult", "video")), uibm, 0, 0, 2300, 2300, 0, 0);
+        c = cvWaitKey(1);
+
+        g->GetFrame();
+        g->InitGuideStar();
+        x3 = g->ref_x;
+        y3 = g->ref_y;
+	blit(g->image   * (0.1 * cvGetTrackbarPos("mult", "video")), uibm, 0, 0, 2300, 2300, 0, 0);
+        c = cvWaitKey(1);
+           
+	g->Move(-5.0, -5.0);
+ 
+	stopCapture();
+    }
+    return 0;
+}
+
+//--------------------------------------------------------------------------------------
+
 bool match(char *s1, const char *s2)
 {
 	return(strncmp(s1, s2, strlen(s2)) == 0);
@@ -533,7 +641,8 @@ void help(char **argv)
                 printf("%s -h        print this help\n", argv[0]);
                 printf("%s -f        full field find star\n", argv[0]);
                 printf("%s -g        acquire guide star and guide\n", argv[0]);
-                printf("exta args\n");
+               	printf("%s -c        calibrate mount\n", argv[0]); 
+		printf("exta args\n");
                 printf("-gain=value\n");
                 printf("-exp=value (in sec)\n");
                 printf("-mult=value\n");
@@ -571,6 +680,7 @@ int main(int argc, char **argv)
         while(pos < argc) {
                 if (match(argv[pos], "-f")) find_guide();
                 if (match(argv[pos], "-g")) guide(); 
+		if (match(argv[pos], "-c")) calibrate();	
 		pos++;
         }
 
