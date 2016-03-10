@@ -7,22 +7,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "./tiny/tinyxml.h"
 
-bool sim = false;
-
-//----------- 
-// guide solving
-
-//Input interpretation:
-//solve a = x u+y v
-//b = x w+y z  for  x, y
-
-//Results:More rootsStep-by-step solution
-//x = (b v-a z)/(v w-u z) and y = (b u-a w)/(u z-v w) and v w!=u z and v!=0
-//x = a/u and y = (b u-a w)/(u z) and v = 0 and u!=0 and z!=0
-
-//y = (a-u x)/v and z = 0 and w = 0 and b = 0 and v!=0
-//y = (b-w x)/z and v = 0 and u = 0 and a = 0 and z!=0 and w!=0
-//y = b/z and w = 0 and u = 0 and z!=0 and a = (b v)/z and v!=0
+bool sim = true;
 
 
 //--------------------------------------------------------------------------------------
@@ -41,6 +26,7 @@ using namespace std;
 #define uchar unsigned char
 #define PTYPE unsigned short
 #define BOX_HALF 7 // Centroid box half width/height
+
 //--------------------------------------------------------------------------------------
 
 
@@ -142,9 +128,15 @@ public:
 	float	exp;
 	float	background;
 	float	dev;
-
+	float	mount_dx1;
+	float	mount_dy1;
+	float	mount_dx2;
+	float	mount_dy2;	
 private:
 	void 	InitCam(int cx, int cy, int width, int height);
+	float 	error_to_tx(float mx, float my);
+	float 	error_to_ty(float mx, float my);
+
 	
 public:
 	void 	Centroid(float*cx, float*cy, float*total_v);
@@ -155,7 +147,22 @@ public:
 	void	Move(float dx, float dy);
 };
 
+//--------------------------------------------------------------------------------------
+// guide solving
+// http://www.wolframalpha.com/input/?i=solve+m%3D+x*u+%2B+x*y*v;+n+%3D+x*w+%2B+y*z+for+x,y
+//--------------------------------------------------------------------------------------
 
+float Guider::error_to_tx(float mx, float my)
+{
+    return (my * mount_dx2 - mx * mount_dy2) / (mount_dx2 * mount_dy1 - mount_dx2 * mount_dy2);
+}
+
+//--------------------------------------------------------------------------------------
+
+float Guider::error_to_ty(float mx, float my)
+{
+    return (my * mount_dx1 - mx * mount_dy1) / (mount_dx1 * mount_dy2 - mount_dx2 * mount_dy1);
+}
 
 //--------------------------------------------------------------------------------------
 
@@ -202,6 +209,12 @@ void Guider::MinDev()
 	ref_y = -1;
 
 	if (!sim) InitCam(0, 0, width, height);
+
+
+	mount_dx1 = get_value("mount_dx1");
+        mount_dx2 = get_value("mount_dx2");
+        mount_dy1 = get_value("mount_dy1");
+        mount_dy2 = get_value("mount_dy2");
 }
 
 //--------------------------------------------------------------------------------------
@@ -601,29 +614,51 @@ int calibrate()
 	g->InitGuideStar();
         x1 = g->ref_x;
 	y1 = g->ref_y;
+
 	g->Move(5.0, 0);
         blit(g->image   * (0.1 * cvGetTrackbarPos("mult", "video")), uibm, 0, 0, 2300, 2300, 0, 0);
-        char c = cvWaitKey(1);
+        cv::imshow("video", uibm);
+ 
+	char c = cvWaitKey(1);
 
         g->GetFrame();
         g->InitGuideStar();
         x2 = g->ref_x;
         y2 = g->ref_y;
+	
 	g->Move(0.0, 5.0);
         blit(g->image   * (0.1 * cvGetTrackbarPos("mult", "video")), uibm, 0, 0, 2300, 2300, 0, 0);
-        c = cvWaitKey(1);
+        cv::imshow("video", uibm);
+	c = cvWaitKey(1);
 
         g->GetFrame();
         g->InitGuideStar();
         x3 = g->ref_x;
         y3 = g->ref_y;
+	
 	blit(g->image   * (0.1 * cvGetTrackbarPos("mult", "video")), uibm, 0, 0, 2300, 2300, 0, 0);
-        c = cvWaitKey(1);
+        cv::imshow("video", uibm);
+	c = cvWaitKey(1);
            
 	g->Move(-5.0, -5.0);
  
 	stopCapture();
     }
+    if (x1 < 0 || x2 < 0 || x3 < 0) {
+	printf("no reference star\n");
+	exit(-1);
+    }
+
+    g->mount_dx1 = (x2-x1);
+    g->mount_dy1 = (y2-y1);
+    g->mount_dx2 = (x3-x2);
+    g->mount_dy2 = (y3-y2);
+
+    set_value("mount_dx1", g->mount_dx1);
+    set_value("mount_dx2", g->mount_dx2);
+    set_value("mount_dy1", g->mount_dy1);
+    set_value("mount_dy2", g->mount_dy2);
+ 
     return 0;
 }
 
