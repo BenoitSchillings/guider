@@ -134,6 +134,8 @@ public:
 	float	mount_dy2;	
 private:
 	void 	InitCam(int cx, int cy, int width, int height);
+	
+public:
 	float 	error_to_tx(float mx, float my);
 	float 	error_to_ty(float mx, float my);
 
@@ -151,17 +153,37 @@ public:
 // guide solving
 // http://www.wolframalpha.com/input/?i=solve+m%3D+x*u+%2B+x*y*v;+n+%3D+x*w+%2B+y*z+for+x,y
 //--------------------------------------------------------------------------------------
+// mx = tx * dx1 + ty * dx2;
+// my = tx * dy1 + ty * dy2;
+// m = xa+yb
+// n = xc+yd
+//dx1 is a
+//dx2 is b
+//dy1 is c
+//dy2 is d
+//x=tx
+//y=ty
+//m = mx
+//n = my
+
+
 
 float Guider::error_to_tx(float mx, float my)
 {
-    return (my * mount_dx2 - mx * mount_dy2) / (mount_dx2 * mount_dy1 - mount_dx2 * mount_dy2);
+    	float num = (mount_dy2 * mx) - (mount_dx2*my);
+	float den = (mount_dx1*mount_dy2)-(mount_dx2*mount_dy1);
+
+	return(num/den);
 }
 
 //--------------------------------------------------------------------------------------
 
 float Guider::error_to_ty(float mx, float my)
 {
-    return (my * mount_dx1 - mx * mount_dy1) / (mount_dx1 * mount_dy2 - mount_dx2 * mount_dy1);
+	float num = (mount_dy1*mx - mount_dx1*my);
+	float den = (mount_dx2*mount_dy1 - mount_dx1*mount_dy2);
+
+	return(num/den);
 }
 
 //--------------------------------------------------------------------------------------
@@ -664,6 +686,30 @@ int calibrate()
 
 //--------------------------------------------------------------------------------------
 
+void test_guide()
+{
+	Guider *g;
+
+	g = new Guider();
+	
+
+	g->mount_dx1 = 10.0;
+	g->mount_dy1 = 0.001;
+	g->mount_dx2 = 0.001;
+	g->mount_dy2 = 10.0;
+
+
+	printf("error is -10 pixel in x  %f %f\n", g->error_to_tx(-10, 0), g->error_to_ty(-10, 0)); 
+        printf("error is 10 pixel in y  %f %f\n", g->error_to_tx(0, 10), g->error_to_ty(0, 10));
+        printf("error is 10 pixel in x&y  %f %f\n", g->error_to_tx(10, 10), g->error_to_ty(10, 10));
+        printf("error is 10 pixel in x and -10 y  %f %f\n", g->error_to_tx(10, -10), g->error_to_ty(10, -10));
+	
+}
+
+
+
+//--------------------------------------------------------------------------------------
+
 bool match(char *s1, const char *s2)
 {
 	return(strncmp(s1, s2, strlen(s2)) == 0);
@@ -677,6 +723,7 @@ void help(char **argv)
                 printf("%s -f        full field find star\n", argv[0]);
                 printf("%s -g        acquire guide star and guide\n", argv[0]);
                	printf("%s -c        calibrate mount\n", argv[0]); 
+	        printf("%s -t        test guide logic\n", argv[0]);
 		printf("exta args\n");
                 printf("-gain=value\n");
                 printf("-exp=value (in sec)\n");
@@ -686,9 +733,16 @@ void help(char **argv)
 //--------------------------------------------------------------------------------------
 
 
+void intHandler(int dummy=0) {
+    printf("emergency close\n");    exit(0);
+}
+
+//--------------------------------------------------------------------------------------
+
+
 int main(int argc, char **argv)
 {
-        Guider *g;
+	signal(SIGINT, intHandler);
 	
         if (argc == 1 || strcmp(argv[1], "-h") == 0) {
                	help(argv);
@@ -713,7 +767,8 @@ int main(int argc, char **argv)
 	set_value("mult", g_mult);
 
         while(pos < argc) {
-                if (match(argv[pos], "-f")) find_guide();
+               	if (match(argv[pos], "-t")) test_guide(); 
+		if (match(argv[pos], "-f")) find_guide();
                 if (match(argv[pos], "-g")) guide(); 
 		if (match(argv[pos], "-c")) calibrate();	
 		pos++;
