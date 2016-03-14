@@ -132,6 +132,8 @@ public:
 	float	mount_dy1;
 	float	mount_dx2;
 	float	mount_dy2;	
+	float	gain_x;
+	float	gain_y;
 private:
 	void 	InitCam(int cx, int cy, int width, int height);
 	
@@ -237,6 +239,8 @@ void Guider::MinDev()
         mount_dx2 = get_value("mount_dx2");
         mount_dy1 = get_value("mount_dy1");
         mount_dy2 = get_value("mount_dy2");
+	gain_x = 1.0;
+	gain_y = 1.0;
 }
 
 //--------------------------------------------------------------------------------------

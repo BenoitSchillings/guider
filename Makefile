@@ -8,11 +8,11 @@ TINY = tinyxmlerror.cpp.o tinystr.cpp.o tinyxmlparser.cpp.o tinyxml.cpp.o
 OPENCV = $(shell pkg-config --cflags opencv) $(shell pkg-config --libs opencv)
 #OPENCV = -I/usr/local/include/opencv -I/usr/local/include -L/usr/local/lib -lopencv_calib3d -lopencv_contrib -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_gpu -lopencv_highgui -lopencv_imgproc -lopencv_legacy -lopencv_ml -lopencv_nonfree -lopencv_objdetect -lopencv_photo -lopencv_stitching -lopencv_superres -lopencv_ts -lopencv_video -lopencv_videostab 
 
-USB =  -I../libusb/include  -L../libusb/$(platform) -lusb-1.0  
+USB =  -I./libusb/include  -L./libusb/$(platform) -lusb-1.0  
 
 
 
-LIBSPATH = -L../lib/$(platform) -I../include
+LIBSPATH = -L./lib/$(platform) -I./include
 
 
 
