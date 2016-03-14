@@ -248,6 +248,16 @@ void Guider::MinDev()
 
 void	Guider::Move(float dx, float dy)
 {
+    dx *= gain_x;
+    dy *= gain_y;
+
+    if (fabs(dx) < 0.02) {
+   	dx = 0; 
+    }
+    if (fabs(dy) < 0.02) {
+	dy = 0;
+    }
+ 
     if (dx > 0) {
         pulseGuide(guideEast, dx*1000.0);
     }
