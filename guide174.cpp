@@ -286,8 +286,7 @@ bool Guider::HasGuideStar()
 
 bool Guider::InitGuideStar()
 {
-	#define	MIN_STAR 2000
-	
+	MinDev();	
 	GaussianBlur(image, temp_image, Point(7, 7), 5);	
 
 	int	x, y;
@@ -304,7 +303,8 @@ bool Guider::InitGuideStar()
 			}	
 		}
 	}
-	if (max < MIN_STAR) {
+	
+ 	if (max < background + (dev*5)) {
 		ref_x = -1;
 		ref_y = -1;
 		return false;	
