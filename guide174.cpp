@@ -742,6 +742,8 @@ void help(char **argv)
                 printf("-gain=value\n");
                 printf("-exp=value (in sec)\n");
                 printf("-mult=value\n");
+		printf("complex example\n");
+		printf("./guider -exp=0.5 -gain=300 -mult=4 -c\n");
 }
 
 //--------------------------------------------------------------------------------------
