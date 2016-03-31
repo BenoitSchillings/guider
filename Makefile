@@ -1,12 +1,12 @@
 ver = release 
-platform = mac64 
+platform = x64 
 
 CC = g++
 #INCLIB = /usr/local/include
 #LDLIB = /usr/local/lib
 TINY = ./tinyobj/tinyxmlerror.cpp.o ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o
-OPENCV = $(shell pkg-config --cflags opencv) $(shell pkg-config --libs opencv)
-#OPENCV = -I/usr/local/include/opencv -I/usr/local/include -L/usr/local/lib -lopencv_calib3d -lopencv_contrib -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_gpu -lopencv_highgui -lopencv_imgproc -lopencv_legacy -lopencv_ml -lopencv_nonfree -lopencv_objdetect -lopencv_photo -lopencv_stitching -lopencv_superres -lopencv_ts -lopencv_video -lopencv_videostab 
+#OPENCV = $(shell pkg-config --cflags opencv) $(shell pkg-config --libs opencv)
+OPENCV = -I/usr/local/include/opencv -I/usr/local/include -L/usr/local/lib -lopencv_calib3d -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_highgui -lopencv_imgproc -lopencv_ml -lopencv_objdetect -lopencv_photo -lopencv_stitching -lopencv_superres -lopencv_ts -lopencv_video -lopencv_videostab 
 
 USB =  -I./libusb/include  -L./libusb/$(platform) -lusb-1.0  
 

@@ -6,8 +6,9 @@
 #include <opencv2/core/core.hpp> 
 #include <opencv2/highgui/highgui.hpp>
 #include "./tiny/tinyxml.h"
+#include <signal.h>
 
-bool sim = true;
+bool sim = false;
 
 
 //--------------------------------------------------------------------------------------
@@ -114,7 +115,7 @@ public:
 		Guider();
 		~Guider();
 
-	void 	GetFrame();
+	bool 	GetFrame();
 
     	int 	width;
     	int 	height;
@@ -218,8 +219,8 @@ void Guider::MinDev()
 
 	Guider::Guider()
 {
-	width = 1000;
-	height = 1000;
+	width = 1400;
+	height = 900;
 	frame = 0;
 	background = 0;
 	dev = 100;
@@ -340,16 +341,16 @@ void Guider::InitCam(int cx, int cy, int width, int height)
     
     
     initCamera(); //this must be called before camera operation. and it only need init once
-    
+    printf("resolution %d %d\n", getMaxWidth(), getMaxHeight()); 
 
-  
-    setImageFormat(width, height, 1, IMG_RAW16);
+    setImageFormat(width, height, 2, IMG_RAW16);
     setValue(CONTROL_BRIGHTNESS, 100, false);
     setValue(CONTROL_GAIN, 0, false);
-    setValue(CONTROL_BANDWIDTHOVERLOAD, 0, true); //lowest transfer speed
-    setValue(CONTROL_EXPOSURE, 50, false);
-    setValue(CONTROL_HIGHSPEED, 1, false);
-    setStartPos(cx - width/2, cy-height/2);
+    setValue(CONTROL_BANDWIDTHOVERLOAD, 60, false); //lowest transfer speed
+    setValue(CONTROL_EXPOSURE, 10, false);
+    //setValue(CONTROL_HIGHSPEED, 0, false);
+    //setStartPos(cx - width/2, cy-height/2);
+    setStartPos(0, 0);
 }
 
 //--------------------------------------------------------------------------------------
@@ -402,7 +403,7 @@ void Guider::Centroid(float*cx, float*cy, float*total_v)
 
 //--------------------------------------------------------------------------------------
 
-void Guider::GetFrame()
+bool Guider::GetFrame()
 {
      	frame++;
  
@@ -424,14 +425,30 @@ void Guider::GetFrame()
                 	}
         	}
 	
-		return; 
+		return true; 
 	
 	}
  
 	bool got_it;
-        do {
-            got_it = getImageData(image.ptr<uchar>(0), width * height * sizeof(PTYPE), 20);
-        } while(!got_it);
+       	int total = 0; 
+	
+	for (int y = 0; y < height; y++) {
+		//getImageData(image.ptr<uchar>(y * width * sizeof(PTYPE)), width * sizeof(PTYPE), 20);	
+	}
+
+	//do {
+            got_it = getImageData(image.ptr<uchar>(0), width * height * sizeof(PTYPE), 600);
+       	    //printf("x1\n"); 
+            //total += 20;	
+	//} while(!got_it && (total < 500));
+	
+
+	//if (!got_it) {
+		//printf("bad cam\n");
+		//exit(-1);	
+	//}
+	
+	return got_it;
 }
 
 //--------------------------------------------------------------------------------------
@@ -451,7 +468,7 @@ void hack_gain_upd(Guider *aguide)
 {
         float gain = cvGetTrackbarPos("gain", "video");
         float exp = cvGetTrackbarPos("exp", "video");
-        exp = exp / 100.0;
+        exp = exp / 1000.0;
         g_exp = exp;
 	g_gain = gain;
 	g_mult = cvGetTrackbarPos("mult", "video")/10.0; 
@@ -459,7 +476,7 @@ void hack_gain_upd(Guider *aguide)
            
 	    if (sim == 0) { 
        	    	setValue(CONTROL_GAIN, gain, false);
-            	setValue(CONTROL_EXPOSURE, exp*1000000, false);
+            	setValue(CONTROL_EXPOSURE, exp*1000000, true);
             	setValue(CONTROL_BRIGHTNESS, 200, false);
             } 
 	    
@@ -476,12 +493,12 @@ void ui_setup()
 {
         namedWindow("video", 1);
         createTrackbar("gain", "video", 0, 600, 0);
-        createTrackbar("exp", "video", 0, 100, 0);
+        createTrackbar("exp", "video", 0, 1000, 0);
         createTrackbar("mult", "video", 0, 100, 0);
         createTrackbar("Sub", "video", 0, 500, 0);
         
 	setTrackbarPos("gain", "video", g_gain);
-        setTrackbarPos("exp", "video", 100.0 * g_exp);
+        setTrackbarPos("exp", "video", 1000.0 * g_exp);
         setTrackbarPos("mult", "video", 10.0 *g_mult);
 }
 
@@ -501,9 +518,8 @@ int find_guide()
     
     
     while(1) {
-        
         g->GetFrame();
-        g->MinDev(); 
+	g->MinDev(); 
 	g->image = g->image - g->background;	
 	g->image = g->image * (0.1 * cvGetTrackbarPos("mult", "video")); 	
 	DrawVal(g->image, "exp ", g->exp, 0, "sec");
@@ -515,7 +531,8 @@ int find_guide()
         
 	if (c == 27) {
             stopCapture();
-            return 0; 
+            closeCamera(); 
+	    return 0; 
         }
     }
 }
@@ -607,6 +624,7 @@ int guide()
 		char c = cvWaitKey(1);
 		if (c == 27) {
 			stopCapture();
+			closeCamera();	
 			return 0;
 		}
 	}
@@ -679,6 +697,7 @@ int calibrate()
 	g->Move(-5.0, -5.0);
  
 	stopCapture();
+   	closeCamera(); 
     }
     if (x1 < 0 || x2 < 0 || x3 < 0) {
 	printf("no reference star\n");
@@ -750,7 +769,8 @@ void help(char **argv)
 
 
 void intHandler(int dummy=0) {
-    printf("emergency close\n");    exit(0);
+   	closeCamera(); 
+	printf("emergency close\n");    exit(0);
 }
 
 //--------------------------------------------------------------------------------------
