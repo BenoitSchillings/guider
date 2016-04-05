@@ -17,6 +17,7 @@ class AP {
     int Send(const char*);
     int Reply();
     void Bump(int dx, int dy);
+    void Stop();
 
     int fd;
     char reply[512]; 
@@ -128,20 +129,35 @@ int AP::Send(const char *cmd)
 
 void AP::Bump(int dx, int dy)
 {
-    if (dx > 0) {
-        sprintf(buf, ":Me%d#", dx);Send(buf);
+	
+    int min_move = 5;
+ 
+    if (dx>999) dx = 999; 
+    if (dx<-999) dx = -999;
+    if (dy>999) dy = 999;
+    if (dy<-999) dy = -999;
+ 
+    if (dx > min_move) {
+        sprintf(buf, ":Me%03d#", dx);Send(buf);
     }
-     if (dx < 0) {
-        sprintf(buf, ":Mw%d#", -dx);Send(buf);
+     if (dx < (-min_move)) {
+        sprintf(buf, ":Mw%03d#", -dx);Send(buf);
     }
-    if (dy > 0) {
-        sprintf(buf, ":Ms%d#", dx);Send(buf);
+    if (dy > min_move) {
+        sprintf(buf, ":Ms%03d#", dy);Send(buf);
     }
-    if (dy < 0) {
-        sprintf(buf, ":Mn%d#", -dx);Send(buf);
+    if (dy < (-min_move)) {
+        sprintf(buf, ":Mn%03d#", -dy);Send(buf);
     }
 }
 
+//----------------------------------------------------------------------------------------
+
+
+void AP::Stop()
+{
+	Send(":Q#");
+}
 
 //----------------------------------------------------------------------------------------
 
