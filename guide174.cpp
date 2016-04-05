@@ -10,6 +10,7 @@
 
 bool sim = false;
 
+#include "ser.cpp"
 
 //--------------------------------------------------------------------------------------
 
@@ -82,6 +83,11 @@ void cvText(Mat img, const char* text, int x, int y)
 }
 
 //--------------------------------------------------------------------------------------
+
+void center(Mat img)
+{
+	rectangle(img, Point(700-10, 500-10), Point(700+10, 500+10), Scalar(9000, 9000, 9000), 1, 8);
+}
 
 void DrawVal(Mat img, const char* title, float value, int y, const char *units)
 {
@@ -219,8 +225,8 @@ void Guider::MinDev()
 
 	Guider::Guider()
 {
-	width = 1400;
-	height = 900;
+	width = 1512;
+	height = 1200;
 	frame = 0;
 	background = 0;
 	dev = 100;
@@ -343,13 +349,12 @@ void Guider::InitCam(int cx, int cy, int width, int height)
     initCamera(); //this must be called before camera operation. and it only need init once
     printf("resolution %d %d\n", getMaxWidth(), getMaxHeight()); 
 
-    setImageFormat(width, height, 2, IMG_RAW16);
+    setImageFormat(width, height, 1, IMG_RAW16);
     setValue(CONTROL_BRIGHTNESS, 100, false);
     setValue(CONTROL_GAIN, 0, false);
     setValue(CONTROL_BANDWIDTHOVERLOAD, 60, false); //lowest transfer speed
     setValue(CONTROL_EXPOSURE, 10, false);
-    //setValue(CONTROL_HIGHSPEED, 0, false);
-    //setStartPos(cx - width/2, cy-height/2);
+    setValue(CONTROL_HIGHSPEED, 1, false);
     setStartPos(0, 0);
 }
 
@@ -432,21 +437,21 @@ bool Guider::GetFrame()
 	bool got_it;
        	int total = 0; 
 	
-	for (int y = 0; y < height; y++) {
+	//for (int y = 0; y < height; y++) {
 		//getImageData(image.ptr<uchar>(y * width * sizeof(PTYPE)), width * sizeof(PTYPE), 20);	
-	}
+	//}
 
-	//do {
-            got_it = getImageData(image.ptr<uchar>(0), width * height * sizeof(PTYPE), 600);
+	do {
+            got_it = getImageData(image.ptr<uchar>(0), width * height * sizeof(PTYPE), -1);
        	    //printf("x1\n"); 
-            //total += 20;	
-	//} while(!got_it && (total < 500));
+            total += 20;	
+	} while(!got_it && (total < 500));
 	
 
-	//if (!got_it) {
-		//printf("bad cam\n");
-		//exit(-1);	
-	//}
+	if (!got_it) {
+		printf("bad cam\n");
+		exit(-1);	
+	}
 	
 	return got_it;
 }
@@ -476,7 +481,7 @@ void hack_gain_upd(Guider *aguide)
            
 	    if (sim == 0) { 
        	    	setValue(CONTROL_GAIN, gain, false);
-            	setValue(CONTROL_EXPOSURE, exp*1000000, true);
+            	setValue(CONTROL_EXPOSURE, exp*1000000, false);
             	setValue(CONTROL_BRIGHTNESS, 200, false);
             } 
 	    
@@ -515,27 +520,77 @@ int find_guide()
     hack_gain_upd(g);
     
     startCapture();
-    
-    
+   
+    FILE *out;
+
+    out = fopen("./out.ser", "wb"); 
+   
+    write_header(out, g->height, g->width);
+ 
     while(1) {
         g->GetFrame();
+	fwrite(g->image.ptr<uchar>(0), 1, g->width*g->height*2, out);	
 	g->MinDev(); 
-	g->image = g->image - g->background;	
+	//g->image = g->image - g->background;	
 	g->image = g->image * (0.1 * cvGetTrackbarPos("mult", "video")); 	
 	DrawVal(g->image, "exp ", g->exp, 0, "sec");
         DrawVal(g->image, "gain", g->gain, 1, "");
+        DrawVal(g->image, "frame", g->frame*1.0, 2, ""); 
+        center(g->image); 
+	//if (g->frame % 1 == 0) { 
+		cv::imshow("video", g->image);
+        	char c = cvWaitKey(1);
+        	hack_gain_upd(g);
         
-        cv::imshow("video", g->image);
-        char c = cvWaitKey(1);
-        hack_gain_upd(g);
-        
-	if (c == 27) {
-            stopCapture();
-            closeCamera(); 
-	    return 0; 
+		if (c == 27) {
+            		stopCapture();
+            		closeCamera(); 
+	    		return 0; 
+        	}
+   	//} 
+    }	
+}
+
+//--------------------------------------------------------------------------------------
+
+int sum_guide()
+{
+    Guider *g;
+
+    g = new Guider();
+
+    ui_setup();
+    hack_gain_upd(g);
+
+    startCapture();
+
+
+    while(1) {
+        g->GetFrame();
+        g->MinDev();
+        g->image = g->image - g->background;
+        g->image = g->image * (0.1 * cvGetTrackbarPos("mult", "video"));
+        DrawVal(g->image, "exp ", g->exp, 0, "sec");
+        DrawVal(g->image, "gain", g->gain, 1, "");
+        DrawVal(g->image, "frame", g->frame*1.0, 2, "");
+
+        if (g->frame % 1 == 0) {
+               	g->temp_image = 0.97 * g->temp_image +  0.03 * g->image; 
+		//g->temp_image = g->temp_image * 0.5;
+	
+		cv::imshow("video", g->temp_image);
+                char c = cvWaitKey(1);
+                hack_gain_upd(g);
+
+                if (c == 27) {
+                        stopCapture();
+                        closeCamera();
+                        return 0;
+                }
         }
     }
 }
+
 
 //--------------------------------------------------------------------------------------
 
@@ -805,7 +860,9 @@ int main(int argc, char **argv)
         while(pos < argc) {
                	if (match(argv[pos], "-t")) test_guide(); 
 		if (match(argv[pos], "-f")) find_guide();
-                if (match(argv[pos], "-g")) guide(); 
+                if (match(argv[pos], "-s")) sum_guide();
+ 
+		if (match(argv[pos], "-g")) guide(); 
 		if (match(argv[pos], "-c")) calibrate();	
 		pos++;
         }
@@ -814,4 +871,3 @@ int main(int argc, char **argv)
        set_value("gain", g_gain);
        set_value("mult", g_mult);
 }
-
