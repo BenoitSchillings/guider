@@ -8,17 +8,19 @@
 //----------------------------------------------------------------------------------------
 
 class AP {
-public:;
-
+    public:;
+    
     AP();
     ~AP();
     
     int Init();
     int Send(const char*);
     int Reply();
- 
+    void Bump(int dx, int dy);
+
     int fd;
     char reply[512]; 
+    char buf[512];
 };
 
 //----------------------------------------------------------------------------------------
@@ -105,48 +107,67 @@ int AP::Init()
 //----------------------------------------------------------------------------------------
 
 
-    AP::AP()
-    {
-    }
-   
+AP::AP()
+{
+}
+
 //----------------------------------------------------------------------------------------
- 
-    AP::~AP()
-    {
-    }
+
+AP::~AP()
+{
+}
 
 //----------------------------------------------------------------------------------------
 
 int AP::Send(const char *cmd)
 {
-	return write(fd, cmd, strlen(cmd));
+    return write(fd, cmd, strlen(cmd));
 }
+
+//----------------------------------------------------------------------------------------
+
+void AP::Bump(int dx, int dy)
+{
+    if (dx > 0) {
+        sprintf(buf, ":Me%d#", dx);Send(buf);
+    }
+     if (dx < 0) {
+        sprintf(buf, ":Mw%d#", -dx);Send(buf);
+    }
+    if (dy > 0) {
+        sprintf(buf, ":Ms%d#", dx);Send(buf);
+    }
+    if (dy < 0) {
+        sprintf(buf, ":Mn%d#", -dx);Send(buf);
+    }
+}
+
 
 //----------------------------------------------------------------------------------------
 
 int AP::Reply()
 {
-	reply[0] = 0;
-	int	idx = 0;
-	long	total_time = 0;
-	char	c;
-	
-	do {
-		usleep(1000);
-		total_time += 1000;
-
-    		int n = read(fd, &c, 1);
-		if (n > 0) {
-			reply[idx] = c;
-			idx++;
-		}	
-	} while(c != '#' && total_time<1000000);
-	return idx;
+    reply[0] = 0;
+    int	idx = 0;
+    long	total_time = 0;
+    char	c;
+    
+    do {
+        usleep(1000);
+        total_time += 1000;
+        
+        int n = read(fd, &c, 1);
+        if (n > 0) {
+            reply[idx] = c;
+            idx++;
+        }	
+    } while(c != '#' && total_time<1000000);
+    return idx;
 }
 
 //----------------------------------------------------------------------------------------
 
-int main()
+int tmain()
 {
     AP  *ap;
     
@@ -160,6 +181,6 @@ int main()
     ap->Send(":GA#");
     ap->Reply();
     printf("%s\n", ap->reply);
- 
+    
     return 0;
 }
