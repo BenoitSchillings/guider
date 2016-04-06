@@ -680,6 +680,13 @@ int guide()
 	
 			g->Centroid(&cx, &cy, &total_v);
 			if (total_v > 0) {
+//actual correction
+				float dx = cx-g->ref_x;	
+				float dy = cy-g->ref_y;
+
+				float tx = g->error_to_tx(dx, dy);
+				float ty = g->error_to_ty(dx,dy);	
+				g->Move(tx, ty);	
 			}
 			float mult = 0.1 * cvGetTrackbarPos("mult", "video");	
 			blit(mult * g->GuideCrop(), uibm, 0, 0, 1000, 1000, 150, 150);	
