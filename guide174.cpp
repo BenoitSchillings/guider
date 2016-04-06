@@ -1,4 +1,3 @@
-#include "stdio.h"
 #include "ASICamera.h"
 #include <sys/time.h>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -13,6 +12,7 @@ bool sim = false;
 #include "ser.cpp"
 #include "ap.cpp"
 
+AP *ap;
 //--------------------------------------------------------------------------------------
 
 float get_value(const char *name);
@@ -41,6 +41,13 @@ float gain0 = -1;
 float exp0 = -1;
 
 //--------------------------------------------------------------------------------------
+
+void Wait(float t)
+{
+	printf("wait\n");	
+	usleep(t * 1000000.0);
+	printf("wait done\n");
+}
 
 void blit(Mat from, Mat to, int x1, int y1, int w, int h, int dest_x, int dest_y)
 {
@@ -153,7 +160,7 @@ public:
 public:
 	void 	Centroid(float*cx, float*cy, float*total_v);
 	bool 	HasGuideStar();
-	bool 	InitGuideStar();
+	bool 	FindGuideStar();
 	Mat	GuideCrop();
 	void	MinDev();
 	void	Move(float dx, float dy);
@@ -209,7 +216,7 @@ void Guider::MinDev()
 		for (int x = 0; x < width; x += 20) { 
             		float v = image.at<unsigned short>(y, x);
 			float v1 = image.at<unsigned short>(y, x + 1);
-		
+
 			float v2 = (v + v1)/2.0;
 			if (v2 < background) background = v2;
 			count += 1;
@@ -219,7 +226,8 @@ void Guider::MinDev()
 		}
 	}
 	sum = sum / count;
-	dev = sqrt(sum);
+	dev = sqrt(sum) / 4.0;
+	printf("avg = %f, dev = %f\n", sum, dev);
 }
 
 //--------------------------------------------------------------------------------------
@@ -259,6 +267,9 @@ void	Guider::Move(float dx, float dy)
     dx *= gain_x;
     dy *= gain_y;
 
+    ap->Bump(dx, dy);
+    return;
+ 
     if (fabs(dx) < 0.02) {
    	dx = 0; 
     }
@@ -292,18 +303,21 @@ bool Guider::HasGuideStar()
 
 //--------------------------------------------------------------------------------------
 
-bool Guider::InitGuideStar()
+bool Guider::FindGuideStar()
 {
 	MinDev();	
-	GaussianBlur(image, temp_image, Point(7, 7), 5);	
+	//GaussianBlur(image, temp_image, Point(7, 7), 5);	
 
 	int	x, y;
-	int	max = 0;
+	long	max = 0;
 
 
 	for (y = 2*guide_box_size; y < height - 2*guide_box_size; y++) {
 		for (x = 2*guide_box_size; x < width - 2*guide_box_size; x++) {
-			int v = image.at<unsigned short>(y, x);
+			int v = image.at<unsigned short>(y, x) +	
+				image.at<unsigned short>(y, x + 1) +
+				image.at<unsigned short>(y + 1, x) +
+				image.at<unsigned short>(y + 1, x + 1);
  			if (v > max) {
 				max = v;
 				ref_x = x;
@@ -312,7 +326,7 @@ bool Guider::InitGuideStar()
 		}
 	}
 	
- 	if (max < background + (dev*5)) {
+ 	if (max < 0) {
 		ref_x = -1;
 		ref_y = -1;
 		return false;	
@@ -357,6 +371,7 @@ void Guider::InitCam(int cx, int cy, int width, int height)
     setValue(CONTROL_EXPOSURE, 10, false);
     setValue(CONTROL_HIGHSPEED, 1, false);
     setStartPos(0, 0);
+    printf("init done\n");
 }
 
 //--------------------------------------------------------------------------------------
@@ -524,13 +539,15 @@ int find_guide()
    
     FILE *out;
 
+    printf("db1\n");
     out = fopen("./out.ser", "wb"); 
-   
+    printf("db2\n"); 
     write_header(out, g->height, g->width);
- 
+    printf("db3\n"); 
     while(1) {
-        g->GetFrame();
-	fwrite(g->image.ptr<uchar>(0), 1, g->width*g->height*2, out);	
+        ap->Log(); 
+	g->GetFrame();
+	//fwrite(g->image.ptr<uchar>(0), 1, g->width*g->height*2, out);	
 	g->MinDev(); 
 	//g->image = g->image - g->background;	
 	g->image = g->image * (0.1 * cvGetTrackbarPos("mult", "video")); 	
@@ -649,8 +666,8 @@ int guide()
 		g->GetFrame();
 		if (!g->HasGuideStar()) {
 			blit(g->image   * (0.1 * cvGetTrackbarPos("mult", "video")), uibm, 0, 0, 2300, 2300, 0, 0);
-			if (g->InitGuideStar()) {
-				uibm = Mat(Size(400, 400), CV_16UC1);	
+			if (g->FindGuideStar()) {
+				uibm = Mat(Size(400, 400), CV_16UC1, cv::Scalar(0));	
 			}	
 		}
 
@@ -703,8 +720,6 @@ int calibrate()
     
     startCapture();
     
-    Mat zoom;
-   
 
 //-----------------------------
 //   x1,y1 ------->x(5)-->x2,y2
@@ -721,37 +736,40 @@ int calibrate()
  
     {
         g->GetFrame();
-	g->InitGuideStar();
-        x1 = g->ref_x;
+	g->FindGuideStar();
+        ap->Log();
+	x1 = g->ref_x;
 	y1 = g->ref_y;
+	printf("v1 %f %f\n", x1, y1);
 
-	g->Move(5.0, 0);
-        blit(g->image   * (0.1 * cvGetTrackbarPos("mult", "video")), uibm, 0, 0, 2300, 2300, 0, 0);
-        cv::imshow("video", uibm);
+	g->Move(0.9, 0);
+        ap->Log(); 
+	cv::imshow("video", g->image);
  
 	char c = cvWaitKey(1);
 
         g->GetFrame();
-        g->InitGuideStar();
+        g->FindGuideStar();
         x2 = g->ref_x;
         y2 = g->ref_y;
-	
-	g->Move(0.0, 5.0);
-        blit(g->image   * (0.1 * cvGetTrackbarPos("mult", "video")), uibm, 0, 0, 2300, 2300, 0, 0);
-        cv::imshow("video", uibm);
+	printf("v2 %f %f\n", x2, y2);
+
+	g->Move(0.0, 0.9);
+	ap->Log(); 
+        cv::imshow("video", g->image);
 	c = cvWaitKey(1);
 
         g->GetFrame();
-        g->InitGuideStar();
+        g->FindGuideStar();
         x3 = g->ref_x;
         y3 = g->ref_y;
+	printf("v3 %f %f\n", x3, y3);
 	
-	blit(g->image   * (0.1 * cvGetTrackbarPos("mult", "video")), uibm, 0, 0, 2300, 2300, 0, 0);
-        cv::imshow("video", uibm);
+        cv::imshow("video", g->image);
 	c = cvWaitKey(1);
            
-	g->Move(-5.0, -5.0);
- 
+	g->Move(-0.9, -0.9);
+	ap->Log();	
 	stopCapture();
    	closeCamera(); 
     }
@@ -835,7 +853,20 @@ void intHandler(int dummy=0) {
 int main(int argc, char **argv)
 {
 	signal(SIGINT, intHandler);
-	
+
+    	ap = new AP();
+	ap->Init();
+	ap->Done();
+/*
+	for (int i = 0; i < 20; i++) {
+		ap->Log();	
+		if (i == 10) {	
+			ap->Bump(0, 0.9);
+			Wait(2);	
+		}	
+	}
+ 	return 0;
+*/	
         if (argc == 1 || strcmp(argv[1], "-h") == 0) {
                	help(argv);
        		return 0; 

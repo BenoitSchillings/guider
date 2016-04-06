@@ -16,8 +16,11 @@ class AP {
     int Init();
     int Send(const char*);
     int Reply();
-    void Bump(int dx, int dy);
+    void Bump(float dx, float dy);
     void Stop();
+    void Done();
+    void Siderial(); 
+    void Log(); 
 
     int fd;
     char reply[512]; 
@@ -122,33 +125,38 @@ AP::~AP()
 
 int AP::Send(const char *cmd)
 {
-    return write(fd, cmd, strlen(cmd));
+   	//printf("cmd %s\n", cmd); 
+	return write(fd, cmd, strlen(cmd));
 }
 
 //----------------------------------------------------------------------------------------
 
-void AP::Bump(int dx, int dy)
+void AP::Bump(float dx, float dy)
 {
 	
     int min_move = 5;
+    int idx = dx * 1000.0;
+    int idy = dy * 1000.0;
+
+    printf("bump %d %d\n", idx, idy); 
+    if (idx>999) idx = 999; 
+    if (idx<-999) idx = -999;
+    if (idy>999) idy = 999;
+    if (idy<-999) idy = -999;
  
-    if (dx>999) dx = 999; 
-    if (dx<-999) dx = -999;
-    if (dy>999) dy = 999;
-    if (dy<-999) dy = -999;
- 
-    if (dx > min_move) {
-        sprintf(buf, ":Me%03d#", dx);Send(buf);
+    if (idx > min_move) {
+        sprintf(buf, ":Me%03d#", idx);Send(buf);
     }
-     if (dx < (-min_move)) {
-        sprintf(buf, ":Mw%03d#", -dx);Send(buf);
+     if (idx < (-min_move)) {
+        sprintf(buf, ":Mw%03d#", -idx);Send(buf);
     }
-    if (dy > min_move) {
-        sprintf(buf, ":Ms%03d#", dy);Send(buf);
+    if (idy > min_move) {
+        sprintf(buf, ":Ms%03d#", idy);Send(buf);
     }
-    if (dy < (-min_move)) {
-        sprintf(buf, ":Mn%03d#", -dy);Send(buf);
+    if (idy < (-min_move)) {
+        sprintf(buf, ":Mn%03d#", -idy);Send(buf);
     }
+    usleep((fabs(dx) + fabs(dy)) * 1000000.0);
 }
 
 //----------------------------------------------------------------------------------------
@@ -158,6 +166,35 @@ void AP::Stop()
 {
 	Send(":Q#");
 }
+
+//----------------------------------------------------------------------------------------
+
+
+void AP::Done()
+{
+	Send(":RT9#");
+}
+
+//----------------------------------------------------------------------------------------
+
+
+void AP::Siderial()
+{
+        Send(":RT2#");
+}
+
+//----------------------------------------------------------------------------------------
+
+void AP::Log()
+{
+	Send(":GD#");
+        Reply();
+        printf("%s ", reply);
+        Send(":GR#");
+        Reply();
+        printf("%s\n", reply);
+}
+
 
 //----------------------------------------------------------------------------------------
 
