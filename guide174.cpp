@@ -28,7 +28,7 @@ using namespace std;
 #define ushort unsigned short
 #define uchar unsigned char
 #define PTYPE unsigned short
-#define BOX_HALF 7 // Centroid box half width/height
+#define BOX_HALF 12 // Centroid box half width/height
 
 //--------------------------------------------------------------------------------------
 
@@ -243,7 +243,7 @@ void Guider::MinDev()
    	image = Mat(Size(width, height), CV_16UC1);
 	temp_image = Mat(Size(width, height), CV_16UC1);
 
-	guide_box_size = 14;
+	guide_box_size = 24;
 
 	ref_x = -1;
 	ref_y = -1;
@@ -306,7 +306,7 @@ bool Guider::HasGuideStar()
 bool Guider::FindGuideStar()
 {
 	MinDev();	
-	//GaussianBlur(image, temp_image, Point(7, 7), 5);	
+	GaussianBlur(image, temp_image, Point(7, 7), 5);	
 
 	int	x, y;
 	long	max = 0;
@@ -314,10 +314,10 @@ bool Guider::FindGuideStar()
 
 	for (y = 2*guide_box_size; y < height - 2*guide_box_size; y++) {
 		for (x = 2*guide_box_size; x < width - 2*guide_box_size; x++) {
-			int v = image.at<unsigned short>(y, x) +	
-				image.at<unsigned short>(y, x + 1) +
-				image.at<unsigned short>(y + 1, x) +
-				image.at<unsigned short>(y + 1, x + 1);
+			int v = temp_image.at<unsigned short>(y, x) +	
+				temp_image.at<unsigned short>(y, x + 1) +
+				temp_image.at<unsigned short>(y + 1, x) +
+				temp_image.at<unsigned short>(y + 1, x + 1);
  			if (v > max) {
 				max = v;
 				ref_x = x;
@@ -686,7 +686,10 @@ int guide()
 
 				float tx = g->error_to_tx(dx, dy);
 				float ty = g->error_to_ty(dx,dy);	
-				g->Move(tx, ty);	
+				printf("Move %f %f\n", tx, ty);	
+				//ty = 0;	
+				g->Move(-tx, -ty);	
+				//g->Move(0.0, 0.04);	
 			}
 			float mult = 0.1 * cvGetTrackbarPos("mult", "video");	
 			blit(mult * g->GuideCrop(), uibm, 0, 0, 1000, 1000, 150, 150);	
@@ -740,33 +743,34 @@ int calibrate()
 //                        x3,y3
 //     then move back x(-5), y(-5) 
    
- 
+     
     {
-        g->GetFrame();
+	for (int i = 0;i < 4; i++) g->GetFrame();
 	g->FindGuideStar();
         ap->Log();
 	x1 = g->ref_x;
 	y1 = g->ref_y;
 	printf("v1 %f %f\n", x1, y1);
 
-	g->Move(0.9, 0);
+	for (int i =0; i < 4; i++) g->Move(0.9, 0);
         ap->Log(); 
 	cv::imshow("video", g->image);
  
 	char c = cvWaitKey(1);
-
-        g->GetFrame();
-        g->FindGuideStar();
+	for (int i =0; i < 4;i++)
+        	g->GetFrame();
+        
+	g->FindGuideStar();
         x2 = g->ref_x;
         y2 = g->ref_y;
 	printf("v2 %f %f\n", x2, y2);
 
-	g->Move(0.0, 0.9);
+	for (int i =0; i < 4; i++) g->Move(0.0, 0.9);
 	ap->Log(); 
         cv::imshow("video", g->image);
 	c = cvWaitKey(1);
 
-        g->GetFrame();
+        for (int i = 0;i < 4; i++) g->GetFrame();
         g->FindGuideStar();
         x3 = g->ref_x;
         y3 = g->ref_y;
@@ -775,9 +779,9 @@ int calibrate()
         cv::imshow("video", g->image);
 	c = cvWaitKey(1);
            
-	g->Move(-0.9, -0.9);
+	for (int i =0; i < 4; i++) g->Move(-0.9, -0.9);
 	ap->Log();	
-	stopCapture();
+        stopCapture();
    	closeCamera(); 
     }
     if (x1 < 0 || x2 < 0 || x3 < 0) {
@@ -864,16 +868,17 @@ int main(int argc, char **argv)
     	ap = new AP();
 	ap->Init();
 	ap->Done();
-/*
-	for (int i = 0; i < 20; i++) {
+	//ap->Siderial();
+
+	for (int i = 0; i < 2220; i++) {
 		ap->Log();	
 		if (i == 10) {	
-			ap->Bump(0, 0.9);
+			//ap->Bump(0, 0.9);
 			Wait(2);	
 		}	
 	}
  	return 0;
-*/	
+	
         if (argc == 1 || strcmp(argv[1], "-h") == 0) {
                	help(argv);
        		return 0; 
@@ -901,8 +906,8 @@ int main(int argc, char **argv)
 		if (match(argv[pos], "-f")) find_guide();
                 if (match(argv[pos], "-s")) sum_guide();
  
-		if (match(argv[pos], "-g")) guide(); 
-		if (match(argv[pos], "-c")) calibrate();	
+		if (match(argv[pos], "-guide")) guide(); 
+		if (match(argv[pos], "-cal")) calibrate();	
 		pos++;
         }
 

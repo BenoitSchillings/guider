@@ -8,23 +8,29 @@
 //----------------------------------------------------------------------------------------
 
 class AP {
-    public:;
+public:;
     
-    AP();
-    ~AP();
+	AP();
+    	~AP();
     
-    int Init();
-    int Send(const char*);
-    int Reply();
-    void Bump(float dx, float dy);
-    void Stop();
-    void Done();
-    void Siderial(); 
-    void Log(); 
+	int	Init();
+    	int	Send(const char*);
+    	int	Reply();
+    	void	Bump(float dx, float dy);
+    	void	Stop();
+    	void	Done();
+    	void	Siderial(); 
+    	void	Log(); 
+    	float	Elevation();
+    	float	Dec(); 
+    	float	Azimuth(); 
+    
+	int 	fd;
+    	char 	reply[512]; 
+    	char	buf[512];
 
-    int fd;
-    char reply[512]; 
-    char buf[512];
+private:
+    	float	GetF();
 };
 
 //----------------------------------------------------------------------------------------
@@ -125,7 +131,7 @@ AP::~AP()
 
 int AP::Send(const char *cmd)
 {
-   	//printf("cmd %s\n", cmd); 
+   	printf("cmd %s\n", cmd); 
 	return write(fd, cmd, strlen(cmd));
 }
 
@@ -193,8 +199,45 @@ void AP::Log()
         Send(":GR#");
         Reply();
         printf("%s\n", reply);
+	printf("%f %f\n", Azimuth(), Elevation());
 }
 
+//----------------------------------------------------------------------------------------
+
+float AP::GetF()
+{
+	Reply();
+	int	a,b,c;
+	sscanf(reply, "%d*%d:%d#", &a, &b, &c);
+	float v = a + (b /60.0) + (c / 3600.0);
+	return v;
+}
+
+
+//----------------------------------------------------------------------------------------
+
+float AP::Dec()
+{	
+	Send(":GD#");
+	return(GetF());
+}
+
+//----------------------------------------------------------------------------------------
+
+float AP::Azimuth()
+{
+        Send(":GZ#");
+        return(GetF());
+}
+
+
+//----------------------------------------------------------------------------------------
+
+float AP::Elevation()
+{	
+	Send(":GA#");
+	return(GetF());
+}
 
 //----------------------------------------------------------------------------------------
 
