@@ -70,9 +70,12 @@ endif
 #endif
 
 
-all:guide174
+all:guide174 planet
 guide174: ap.cpp guide174.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
 	$(CC) -march=native -O3 guide174.cpp util.cpp $(TINY) -o guide174 $(CFLAGS)  $(OPENCV) -lASICamera
+
+planet: ap.cpp planet.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
+	$(CC) -march=native -O3 planet.cpp util.cpp $(TINY) -o planet $(CFLAGS)  $(OPENCV) -lASICamera
 
 ./tinyobj/tinystr.cpp.o: ./tiny/tinystr.cpp
 	$(CC)  -c ./tiny/tinystr.cpp -o ./tinyobj/tinystr.cpp.o $(CFLAGS)
@@ -87,7 +90,7 @@ guide174: ap.cpp guide174.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxml
 	$(CC)  -c ./tiny/tinyxmlerror.cpp -o ./tinyobj/tinyxmlerror.cpp.o $(CFLAGS)
 
 clean:
-	rm -f guide174 
+	rm -f guide174 planet
 #pkg-config libusb-1.0 --cflags --libs
 #pkg-config opencv --cflags --libs
 

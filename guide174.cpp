@@ -28,7 +28,7 @@ using namespace std;
 #define ushort unsigned short
 #define uchar unsigned char
 #define PTYPE unsigned short
-#define BOX_HALF 12 // Centroid box half width/height
+#define BOX_HALF 7 // Centroid box half width/height
 
 //--------------------------------------------------------------------------------------
 
@@ -212,30 +212,29 @@ void Guider::MinDev()
 
 	background = 1e9;
 
-	for (int y = 0; y < height; y += 20) {
-		for (int x = 0; x < width; x += 20) { 
+	for (int y = 1; y < (height-1); y += 20) {
+		for (int x = 1; x < (width-1); x += 20) { 
             		float v = image.at<unsigned short>(y, x);
 			float v1 = image.at<unsigned short>(y, x + 1);
 
-			float v2 = (v + v1)/2.0;
-			if (v2 < background) background = v2;
+			if (v < background) background = v;
 			count += 1;
-
-			v2 = (v1-v);
+			float v2 = (v1-v);
 			sum += (v2*v2);
 		}
 	}
 	sum = sum / count;
-	dev = sqrt(sum) / 4.0;
-	printf("avg = %f, dev = %f\n", sum, dev);
+	sum /= 2.0;	
+	dev = sqrt(sum);
+	printf("t = %d bg = %f, dev = %f\n", time(0) % 60, background, dev);
 }
 
 //--------------------------------------------------------------------------------------
 
 	Guider::Guider()
 {
-	width = 1512;
-	height = 1200;
+	width = 2048; 
+	height = 2048;
 	frame = 0;
 	background = 0;
 	dev = 100;
@@ -367,9 +366,11 @@ void Guider::InitCam(int cx, int cy, int width, int height)
     setImageFormat(width, height, 1, IMG_RAW16);
     setValue(CONTROL_BRIGHTNESS, 100, false);
     setValue(CONTROL_GAIN, 0, false);
-    setValue(CONTROL_BANDWIDTHOVERLOAD, 60, false); //lowest transfer speed
+    printf("max %d\n", getMax(CONTROL_BANDWIDTHOVERLOAD)); 
+
+    //setValue(CONTROL_BANDWIDTHOVERLOAD, 76, false); //lowest transfer speed
     setValue(CONTROL_EXPOSURE, 10, false);
-    setValue(CONTROL_HIGHSPEED, 1, false);
+    //setValue(CONTROL_HIGHSPEED, 1, false);
     setStartPos(0, 0);
     printf("init done\n");
 }
@@ -453,20 +454,13 @@ bool Guider::GetFrame()
 	bool got_it;
        	int total = 0; 
 	
-	//for (int y = 0; y < height; y++) {
-		//getImageData(image.ptr<uchar>(y * width * sizeof(PTYPE)), width * sizeof(PTYPE), 20);	
-	//}
-
-	do {
-            got_it = getImageData(image.ptr<uchar>(0), width * height * sizeof(PTYPE), -1);
-       	    //printf("x1\n"); 
-            total += 20;	
-	} while(!got_it && (total < 500));
+	//getImageAfterExp
+        got_it = getImageData(image.ptr<uchar>(0), width * height * sizeof(PTYPE), -1);
 	
 
 	if (!got_it) {
 		printf("bad cam\n");
-		exit(-1);	
+		//exit(-1);	
 	}
 	
 	return got_it;
@@ -539,33 +533,39 @@ int find_guide()
    
     FILE *out;
 
-    printf("db1\n");
-    out = fopen("./out.ser", "wb"); 
-    printf("db2\n"); 
-    write_header(out, g->height, g->width);
-    printf("db3\n"); 
+    char buf[512];
+	
+    sprintf(buf, "/media/benoit/18A6395AA6393A18/video/out%ld.ser", time(0));
+    out = fopen(buf, "wb"); 
+    write_header(out, g->height, g->width, 1000);
+    int cnt = 0;
+ 
     while(1) {
-        ap->Log(); 
+        //ap->Log(); 
 	g->GetFrame();
 	//fwrite(g->image.ptr<uchar>(0), 1, g->width*g->height*2, out);	
-	g->MinDev(); 
-	//g->image = g->image - g->background;	
-	g->image = g->image * (0.1 * cvGetTrackbarPos("mult", "video")); 	
-	DrawVal(g->image, "exp ", g->exp, 0, "sec");
-        DrawVal(g->image, "gain", g->gain, 1, "");
-        DrawVal(g->image, "frame", g->frame*1.0, 2, ""); 
-        center(g->image); 
-	//if (g->frame % 1 == 0) { 
+	cnt++;	
+	if (g->frame % 20 == 0) { 
+		g->MinDev();	
+		center(g->image);	
+        	DrawVal(g->image, "exp ", g->exp, 0, "sec");
+        	DrawVal(g->image, "gain", g->gain, 1, "");
+        	DrawVal(g->image, "frame", g->frame*1.0, 2, "");
+ 	
+	        g->image = g->image * (0.1 * cvGetTrackbarPos("mult", "video"));
+ 	
 		cv::imshow("video", g->image);
         	char c = cvWaitKey(1);
         	hack_gain_upd(g);
         
 		if (c == 27) {
-            		stopCapture();
+            		fseek(out, 0, SEEK_SET);
+			write_header(out, g->height, g->width, cnt);	
+			stopCapture();
             		closeCamera(); 
 	    		return 0; 
         	}
-   	//} 
+   	} 
     }	
 }
 
@@ -866,19 +866,11 @@ int main(int argc, char **argv)
 	signal(SIGINT, intHandler);
 
     	ap = new AP();
-	ap->Init();
+	//ap->Init();
 	ap->Done();
+	//ap->LongFormat();	
 	//ap->Siderial();
 
-	for (int i = 0; i < 2220; i++) {
-		ap->Log();	
-		if (i == 10) {	
-			//ap->Bump(0, 0.9);
-			Wait(2);	
-		}	
-	}
- 	return 0;
-	
         if (argc == 1 || strcmp(argv[1], "-h") == 0) {
                	help(argv);
        		return 0; 

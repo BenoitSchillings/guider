@@ -4,7 +4,7 @@
 char name[14] = {0x4c, 0x55, 0x43, 0x41, 0x4d, 0x2d, 0x52, 0x45, 0x43, 0x4f, 0x52, 0x44, 0x45, 0x52};
 
 
-void write_header(FILE *f, int width, int height)
+void write_header(FILE *f, int width, int height, int cnt)
 {
 	uint32_t tmp;	
 //0
@@ -30,7 +30,7 @@ void write_header(FILE *f, int width, int height)
 
 //38
 
-	tmp = 12000; //frame count
+	tmp = cnt; //frame count
 	fwrite(&tmp, 1, sizeof(tmp), f); //count
 	
 	tmp = 0;

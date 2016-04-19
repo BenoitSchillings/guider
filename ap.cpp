@@ -20,7 +20,8 @@ public:;
     	void	Stop();
     	void	Done();
     	void	Siderial(); 
-    	void	Log(); 
+    	void	LongFormat();	
+	void	Log(); 
     	float	Elevation();
     	float	Dec(); 
     	float	Azimuth(); 
@@ -28,7 +29,7 @@ public:;
 	int 	fd;
     	char 	reply[512]; 
     	char	buf[512];
-
+	char	short_format;
 private:
     	float	GetF();
 };
@@ -102,6 +103,8 @@ const char *portname = "/dev/ttyUSB0";
 
 int AP::Init()
 {
+    short_format = 1;
+ 
     fd = open (portname, O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0)
     {
@@ -189,6 +192,12 @@ void AP::Siderial()
         Send(":RT2#");
 }
 
+
+void AP::LongFormat()
+{
+	Send(":U#");
+}
+
 //----------------------------------------------------------------------------------------
 
 void AP::Log()
@@ -208,7 +217,14 @@ float AP::GetF()
 {
 	Reply();
 	int	a,b,c;
-	sscanf(reply, "%d*%d:%d#", &a, &b, &c);
+	
+	if (short_format == 1) {
+		sscanf(reply, "%d*%d#", &a, &b);
+		c = 0;	
+	}
+	else {
+		sscanf(reply, "%d*%d:%d#", &a, &b, &c);
+	}	
 	float v = a + (b /60.0) + (c / 3600.0);
 	return v;
 }
@@ -247,7 +263,8 @@ int AP::Reply()
     int	idx = 0;
     long	total_time = 0;
     char	c;
-    
+   
+    usleep(15000); 
     do {
         usleep(1000);
         total_time += 1000;
