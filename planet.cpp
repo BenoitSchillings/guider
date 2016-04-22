@@ -13,6 +13,17 @@ bool sim = false;
 #include "ap.cpp"
 
 AP *ap;
+
+#include <sys/time.h>
+
+double nanotime()
+{
+   timespec ts;
+   clock_gettime(CLOCK_REALTIME, &ts);
+
+   return (ts.tv_sec + ts.tv_nsec * 1e-9);
+}
+
 //--------------------------------------------------------------------------------------
 
 float get_value(const char *name);
@@ -174,7 +185,7 @@ void Planet::MinDev()
 
 	Planet::Planet()
 {
-	width = 2048; 
+	width = 3072; 
 	height = 2048;
 	frame = 0;
 	background = 0;
@@ -222,9 +233,9 @@ void Planet::InitCam(int cx, int cy, int width, int height)
     setValue(CONTROL_GAIN, 0, false);
     printf("max %d\n", getMax(CONTROL_BANDWIDTHOVERLOAD)); 
 
-    //setValue(CONTROL_BANDWIDTHOVERLOAD, 76, false); //lowest transfer speed
-    setValue(CONTROL_EXPOSURE, 10, false);
-    //setValue(CONTROL_HIGHSPEED, 1, false);
+    setValue(CONTROL_BANDWIDTHOVERLOAD, 100, false); //lowest transfer speed
+    setValue(CONTROL_EXPOSURE, 10*1000, false);
+    setValue(CONTROL_HIGHSPEED, 1, false);
     setStartPos(0, 0);
     printf("init done\n");
 }
@@ -261,8 +272,12 @@ bool Planet::GetFrame()
        	int total = 0; 
 	
 	//getImageAfterExp
-        got_it = getImageData(image.ptr<uchar>(0), width * height * sizeof(PTYPE), -1);
-	
+       	double start, end;
+
+	start = nanotime(); 
+ 	got_it = getImageData(image.ptr<uchar>(0), width * height * sizeof(PTYPE), -1);
+ 	end = nanotime();
+	printf("%f\n", end-start);	
 
 	if (!got_it) {
 		printf("bad cam\n");
