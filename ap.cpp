@@ -325,6 +325,10 @@ int AP::SetDec(float dec)
 }
 
 //----------------------------------------------------------------------------------------
+/*
+:RR sxxx.xxxx# Selects the tracking rate in the RA axis to xxx.xxxx
+:RD sxxx.xxxx# Selects the tracking rate in the Dec axis to xxx.xxxx
+*/
 
 int AP::SetRate(float ra, float dec)
 {
