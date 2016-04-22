@@ -46,6 +46,7 @@ using namespace std;
 float  g_gain = 150.0;
 float  g_mult = 2.0;
 float  g_exp = 0.1;
+float  g_scale = 0.5;
 
 float gain0 = -1;
 float exp0 = -1;
@@ -97,7 +98,13 @@ void cvText(Mat img, const char* text, int x, int y)
 
 void center(Mat img)
 {
-	rectangle(img, Point(700-10, 500-10), Point(700+10, 500+10), Scalar(9000, 9000, 9000), 1, 8);
+	int	cx, cy;
+
+	cx = img.cols;	
+ 	cy = img.rows;
+	cx /= 2.0;
+	cy /= 2.0;	
+        rectangle(img, Point(cx-10, cy-10), Point(cx+10, cy+10), Scalar(9000, 9000, 9000), 1, 8);
 }
 
 void DrawVal(Mat img, const char* title, float value, int y, const char *units)
@@ -322,10 +329,14 @@ void ui_setup()
         createTrackbar("exp", "video", 0, 1000, 0);
         createTrackbar("mult", "video", 0, 100, 0);
         createTrackbar("Sub", "video", 0, 500, 0);
+        createTrackbar("scale", "video", 0, 100, 0);
         
 	setTrackbarPos("gain", "video", g_gain);
         setTrackbarPos("exp", "video", 1000.0 * g_exp);
         setTrackbarPos("mult", "video", 10.0 *g_mult);
+
+        setTrackbarPos("scale", "video", 100.0 * g_scale);
+	resizeWindow("video", 1, 1);
 }
 
 //--------------------------------------------------------------------------------------
@@ -350,22 +361,28 @@ int find_guide()
     out = fopen(buf, "wb"); 
     write_header(out, g->height, g->width, 1000);
     int cnt = 0;
+
+    Mat resized;
  
     while(1) {
         //ap->Log(); 
 	g->GetFrame();
 	//fwrite(g->image.ptr<uchar>(0), 1, g->width*g->height*2, out);	
 	cnt++;	
-	if (g->frame % 20 == 0) { 
+        
+        float scale = cvGetTrackbarPos("scale", "video") / 100.0;
+	g_scale = scale;
+	
+	if (g->frame % 5 == 0) { 
 		g->MinDev();	
-		center(g->image);	
-        	DrawVal(g->image, "exp ", g->exp, 0, "sec");
-        	DrawVal(g->image, "gain", g->gain, 1, "");
-        	DrawVal(g->image, "frame", g->frame*1.0, 2, "");
- 	
-	        g->image = g->image * (0.1 * cvGetTrackbarPos("mult", "video"));
- 	
-		cv::imshow("video", g->image);
+        	resize(g->image, resized, Size(0, 0), scale, scale, INTER_AREA);
+		DrawVal(resized, "exp ", g->exp, 0, "sec");
+        	DrawVal(resized, "gain", g->gain, 1, "");
+        	DrawVal(resized, "frame", g->frame*1.0, 2, "");
+ 		
+	        resized = resized * (0.1 * cvGetTrackbarPos("mult", "video"));
+               	center(resized); 
+		cv::imshow("video_out",  resized);
         	char c = cvWaitKey(1);
         	hack_gain_upd(g);
         
@@ -428,7 +445,7 @@ int main(int argc, char **argv)
 	g_exp = get_value("exp");
 	g_gain = get_value("gain");
 	g_mult = get_value("mult");
-	
+ 	g_scale = get_value("scale");	
 	while(pos < argc) {
 		if (match(argv[pos], "-gain=")) {sscanf(strchr(argv[pos], '=') , "=%f",  &g_gain); argv[pos][0] = 0;}
         	if (match(argv[pos], "-exp="))  {sscanf(strchr(argv[pos], '=') , "=%f",  &g_exp); argv[pos][0] = 0;}
@@ -448,4 +465,5 @@ int main(int argc, char **argv)
        set_value("exp", g_exp);
        set_value("gain", g_gain);
        set_value("mult", g_mult);
+       set_value("scale", g_scale);
 }
