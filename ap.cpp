@@ -25,7 +25,9 @@ public:;
     	float	Elevation();
     	float	Dec(); 
     	float	Azimuth(); 
-    
+   
+	int	SetRA(float ra); 
+	int	SetDec(float dec);	
 	int 	fd;
     	char 	reply[512]; 
     	char	buf[512];
@@ -254,6 +256,74 @@ float AP::Elevation()
 	Send(":GA#");
 	return(GetF());
 }
+
+/*
+Command: :Sr HH:MM:SS# or :Sr HH:MM:SS.S#
+Response: “1”
+Defines the commanded Right Ascension, RA. Command may be issued in long or short format regardless of whether long format has been selected. RA specified as DD*MM:SS will also be interpreted properly if greater precision is required, but this is not typically how RA is expressed. This command automatically selects RA-DEC mode. Move and calibrate commands operate on the most recently defined RA if in RA-DEC mode.
+Command: :Sd sDD*MM# or :Sd sDD*MM:SS#
+Response: “1”
+Defines the commanded Declination, DEC. Command may be issued in long or short format regardless of whether long format has been selected. This command automatically selects RA-DEC mode. Move and calibrate commands operate on the most recently defined DEC if in RA-DEC mode.
+*/
+
+
+//----------------------------------------------------------------------------------------
+
+int AP::SetRA(float ra)
+{
+	char	buf[256];
+	int	hour;
+	int	min;
+	int	sec;
+	int	sec10;
+
+	hour = ra;
+	ra -= hour;
+	ra *= 60.0;
+	min = ra;
+	ra -= min;
+	ra *= 60.0;
+	sec = ra;
+	ra -= sec;
+	ra *= 10.0;
+	sec10 = ra;
+
+	sprintf(buf, ":Sr %d:%d:%d.%d#", hour, min, sec, sec10);
+
+	printf("send %s\n", buf);
+	
+	return 0; 
+}
+
+
+//----------------------------------------------------------------------------------------
+
+int AP::SetDec(float dec)
+{
+        char    buf[256];
+        int     d;
+        int     m;
+        int     s;
+	
+	if (dec < 0) {
+		dec = - dec;	
+	}
+
+        d = dec;
+        dec -= d;
+        dec *= 60.0;
+        m = dec;
+        dec -= m;
+        dec *= 60.0;
+        s = dec;
+
+        sprintf(buf, ":Sd %d:%d:%d#", d, m, s);
+
+        printf("send %s\n", buf);
+
+        return 0;
+}
+
 
 //----------------------------------------------------------------------------------------
 

@@ -866,6 +866,9 @@ int main(int argc, char **argv)
 	signal(SIGINT, intHandler);
 
     	ap = new AP();
+	ap->SetRA(23.5);
+	ap->SetDec(44.51);
+	
 	//ap->Init();
 	ap->Done();
 	//ap->LongFormat();	
