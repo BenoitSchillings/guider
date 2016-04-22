@@ -25,7 +25,7 @@ public:;
     	float	Elevation();
     	float	Dec(); 
     	float	Azimuth(); 
-   
+  	int	SetRate(float ra, float dec); 
 	int	SetRA(float ra); 
 	int	SetDec(float dec);	
 	int 	fd;
@@ -290,7 +290,7 @@ int AP::SetRA(float ra)
 
 	sprintf(buf, ":Sr %d:%d:%d.%d#", hour, min, sec, sec10);
 
-	printf("send %s\n", buf);
+	//printf("send %s\n", buf);
 	
 	return 0; 
 }
@@ -319,11 +319,16 @@ int AP::SetDec(float dec)
 
         sprintf(buf, ":Sd %d:%d:%d#", d, m, s);
 
-        printf("send %s\n", buf);
+        //printf("send %s\n", buf);
 
         return 0;
 }
 
+//----------------------------------------------------------------------------------------
+
+int AP::SetRate(float ra, float dec)
+{
+}
 
 //----------------------------------------------------------------------------------------
 
