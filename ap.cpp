@@ -28,6 +28,7 @@ public:;
   	int	SetRate(float ra, float dec); 
 	int	SetRA(float ra); 
 	int	SetDec(float dec);	
+	int	Goto();	
 	int 	fd;
     	char 	reply[512]; 
     	char	buf[512];
@@ -290,6 +291,7 @@ int AP::SetRA(float ra)
 
 	sprintf(buf, ":Sr %d:%d:%d.%d#", hour, min, sec, sec10);
 
+	Send(buf);
 	//printf("send %s\n", buf);
 	
 	return 0; 
@@ -317,21 +319,61 @@ int AP::SetDec(float dec)
         dec *= 60.0;
         s = dec;
 
+	Send(buf);
         sprintf(buf, ":Sd %d:%d:%d#", d, m, s);
 
-        //printf("send %s\n", buf);
 
         return 0;
+}
+
+//----------------------------------------------------------------------------------------
+
+int AP::Goto()
+{
+	Send(":MS#");
 }
 
 //----------------------------------------------------------------------------------------
 /*
 :RR sxxx.xxxx# Selects the tracking rate in the RA axis to xxx.xxxx
 :RD sxxx.xxxx# Selects the tracking rate in the Dec axis to xxx.xxxx
+example :
+this means to slow down RA by 15arcsec/sec * 0.0448 = 0.072 arcsec/sec
+:RR -00.0448#
 */
+
+//Set Rate of 1.0, 0.0 is the normal for RA/DEC
 
 int AP::SetRate(float ra, float dec)
 {
+	ra = ra - 1.0;
+	dec = dec;
+
+	char	buf[256];
+	char	sign;
+
+	if (ra > 0) {
+		sign = '+';
+	}
+	else {
+		sign = '-';	
+		ra = -ra;	
+	}
+	
+	sprintf(buf, ":RR %c%f#", sign, ra);
+	Send(buf);
+
+	if (dec >= 0) {
+		sign = '+'; 
+	}
+	else {
+		sign = '-';
+		dec = -dec;
+	}
+
+	sprintf(buf, ":RD %c%f#", sign, dec);
+	Send(buf);
+
 }
 
 //----------------------------------------------------------------------------------------
