@@ -24,10 +24,12 @@ public:;
 	void	Log(); 
     	float	Elevation();
     	float	Dec(); 
-    	float	Azimuth(); 
+    	float	RA();	
+	float	Azimuth(); 
   	int	SetRate(float ra, float dec); 
 	int	SetRA(float ra); 
 	int	SetDec(float dec);	
+	
 	int	Goto();	
 	int 	fd;
     	char 	reply[512]; 
@@ -35,6 +37,7 @@ public:;
 	char	short_format;
 private:
     	float	GetF();
+	float	GetF_RA();
 };
 
 //----------------------------------------------------------------------------------------
@@ -195,6 +198,7 @@ void AP::Siderial()
         Send(":RT2#");
 }
 
+//----------------------------------------------------------------------------------------
 
 void AP::LongFormat()
 {
@@ -205,13 +209,7 @@ void AP::LongFormat()
 
 void AP::Log()
 {
-	Send(":GD#");
-        Reply();
-        printf("%s ", reply);
-        Send(":GR#");
-        Reply();
-        printf("%s\n", reply);
-	printf("%f %f\n", Azimuth(), Elevation());
+	printf("az = %f\tel = %f\t\ra = %f\tdec = %f\n", Azimuth(), Elevation(), RA(), Dec());
 }
 
 //----------------------------------------------------------------------------------------
@@ -232,6 +230,21 @@ float AP::GetF()
 	return v;
 }
 
+//----------------------------------------------------------------------------------------
+
+float AP::GetF_RA()
+{
+        Reply();
+        int     hh, mm;
+	float	ss;
+
+        sscanf(reply, "%d:%d:%f#", &hh, &mm, &ss);
+        
+	float v = hh + (mm /60.0) + (ss / 3600.0);
+        return v;
+}
+
+
 
 //----------------------------------------------------------------------------------------
 
@@ -239,6 +252,14 @@ float AP::Dec()
 {	
 	Send(":GD#");
 	return(GetF());
+}
+
+//----------------------------------------------------------------------------------------
+
+float AP::RA()
+{
+        Send(":GA#");
+        return(GetF_RA());
 }
 
 //----------------------------------------------------------------------------------------
