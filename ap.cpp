@@ -6,6 +6,8 @@
 #include <fcntl.h>
 
 //----------------------------------------------------------------------------------------
+#define NOT_SET -32000
+//----------------------------------------------------------------------------------------
 
 class AP {
 public:;
@@ -16,7 +18,8 @@ public:;
 	int	Init();
     	int	Send(const char*);
     	int	Reply();
-    	void	Bump(float dx, float dy);
+    	int	GetCC();	
+	void	Bump(float dx, float dy);
     	void	Stop();
     	void	Done();
     	void	Siderial(); 
@@ -35,9 +38,18 @@ public:;
     	char 	reply[512]; 
     	char	buf[512];
 	char	short_format;
+	char	trace;
 private:
     	float	GetF();
 	float	GetF_RA();
+
+	float	ra_set;
+	float	dec_set;
+
+	float	last_ra;
+	float	last_dec;
+	float	last_az;
+	float	last_el;
 };
 
 //----------------------------------------------------------------------------------------
@@ -109,8 +121,16 @@ const char *portname = "/dev/ttyUSB0";
 
 int AP::Init()
 {
-    short_format = 1;
- 
+    short_format = 0;
+
+    ra_set = NOT_SET;
+    dec_set = NOT_SET;
+    last_ra = NOT_SET;
+    last_dec = NOT_SET;
+    last_az = NOT_SET;
+    last_el = NOT_SET;
+
+    trace = 0; 
     fd = open (portname, O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0)
     {
@@ -140,7 +160,7 @@ AP::~AP()
 
 int AP::Send(const char *cmd)
 {
-   	printf("cmd %s\n", cmd); 
+   	if (trace) printf("cmd %s\n", cmd); 
 	return write(fd, cmd, strlen(cmd));
 }
 
@@ -209,7 +229,19 @@ void AP::LongFormat()
 
 void AP::Log()
 {
-	printf("az = %f\tel = %f\t\ra = %f\tdec = %f\n", Azimuth(), Elevation(), RA(), Dec());
+	last_az = Azimuth();
+	last_el = Elevation();
+	last_ra = RA();
+	last_dec = Dec();
+	
+	printf("az = %f\t el = %f\t ra = %f\t dec = %f\n", last_az, last_el, last_ra, last_dec);
+	
+	if (last_dec < -20 || last_dec > 70 || last_el < 20.0 || last_az > 190) {
+		Stop();	
+		Done();
+		printf("emergency limit\n");
+		exit(-1); 	
+	}
 }
 
 //----------------------------------------------------------------------------------------
@@ -237,7 +269,6 @@ float AP::GetF_RA()
         Reply();
         int     hh, mm;
 	float	ss;
-
         sscanf(reply, "%d:%d:%f#", &hh, &mm, &ss);
         
 	float v = hh + (mm /60.0) + (ss / 3600.0);
@@ -258,7 +289,7 @@ float AP::Dec()
 
 float AP::RA()
 {
-        Send(":GA#");
+        Send(":GR#");
         return(GetF_RA());
 }
 
@@ -299,6 +330,8 @@ int AP::SetRA(float ra)
 	int	sec;
 	int	sec10;
 
+	ra_set = ra;
+
 	hour = ra;
 	ra -= hour;
 	ra *= 60.0;
@@ -313,7 +346,7 @@ int AP::SetRA(float ra)
 	sprintf(buf, ":Sr %d:%d:%d.%d#", hour, min, sec, sec10);
 
 	Send(buf);
-	//printf("send %s\n", buf);
+	GetCC();
 	
 	return 0; 
 }
@@ -327,12 +360,21 @@ int AP::SetDec(float dec)
         int     d;
         int     m;
         int     s;
+	char	sign;
+
+
+
+	dec_set = dec;
 	
 	if (dec < 0) {
 		dec = - dec;	
+		sign = '-';	
 	}
-
-        d = dec;
+	else {
+		sign = '+';
+	}
+        
+	d = dec;
         dec -= d;
         dec *= 60.0;
         m = dec;
@@ -340,9 +382,10 @@ int AP::SetDec(float dec)
         dec *= 60.0;
         s = dec;
 
+        sprintf(buf, ":Sd %c%d*%d:%d#", sign, d, m, s);
+	if (trace) printf("%s\n", buf);
 	Send(buf);
-        sprintf(buf, ":Sd %d:%d:%d#", d, m, s);
-
+	GetCC();
 
         return 0;
 }
@@ -351,7 +394,17 @@ int AP::SetDec(float dec)
 
 int AP::Goto()
 {
+	if (dec_set == NOT_SET) {
+		printf("no dec defined\n");
+		return -1;	
+	}
+	if (ra_set == NOT_SET) {
+		printf("no ra defined\n");
+		return -1;
+	}
+	
 	Send(":MS#");
+	GetCC();
 }
 
 //----------------------------------------------------------------------------------------
@@ -394,8 +447,28 @@ int AP::SetRate(float ra, float dec)
 
 	sprintf(buf, ":RD %c%f#", sign, dec);
 	Send(buf);
-
+	Reply();
 }
+
+//----------------------------------------------------------------------------------------
+
+int AP::GetCC()
+{
+    long        total_time = 0;
+    char        c;
+    int		n;
+
+    usleep(15000);
+    do {
+        usleep(1000);
+        total_time += 1000;
+
+        n = read(fd, &c, 1);
+    } while(n == 0 && total_time<1000000);
+    if (trace) printf("%c\n", c);
+    return 0;
+}
+
 
 //----------------------------------------------------------------------------------------
 
@@ -417,6 +490,7 @@ int AP::Reply()
             idx++;
         }	
     } while(c != '#' && total_time<1000000);
+    if (trace) printf("%s\n", reply); 
     return idx;
 }
 

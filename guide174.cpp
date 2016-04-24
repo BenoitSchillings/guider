@@ -867,6 +867,19 @@ int main(int argc, char **argv)
 
     	ap = new AP();
 	ap->Init();
+	ap->LongFormat();	
+	ap->Siderial();	
+	
+	float ra = ap->RA();
+	float dec = ap->Dec();	
+	dec -= 4;	
+	printf("RA is %f\n", ra);
+	printf("DEC is %f\n", dec);	
+	ra -= 0.1;
+	ap->SetRA(ra);	
+	ap->SetDec(dec);
+	
+	ap->Goto();
 	while(1) {
 		ap->Log();
 	}	
