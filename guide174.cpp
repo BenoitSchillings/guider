@@ -872,16 +872,25 @@ int main(int argc, char **argv)
 	
 	float ra = ap->RA();
 	float dec = ap->Dec();	
-	dec -= 4;	
+	dec -= 1;	
 	printf("RA is %f\n", ra);
 	printf("DEC is %f\n", dec);	
-	ra -= 0.1;
-	ap->SetRA(ra);	
-	ap->SetDec(dec);
+	ra -= 0.01;
+	dec = 20.0;	
+	//ap->SetRA(ra);	
+	//ap->SetDec(dec);
 	
-	ap->Goto();
+	//ap->Goto();
+	ap->Stop();	
+	ap->Done();	
+	int i = 0;
+	
 	while(1) {
+		i++;	
 		ap->Log();
+		if (i%50 == 1) {
+			//ap->Bump(0.0, 0.5);
+		}	
 	}	
 	//ap->SetRA(23.5);
 	//ap->SetDec(44.51);

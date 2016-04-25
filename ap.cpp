@@ -8,6 +8,14 @@
 //----------------------------------------------------------------------------------------
 #define NOT_SET -32000
 //----------------------------------------------------------------------------------------
+inline double td(double radians) {
+    return radians * (180.0 / M_PI);
+}
+inline double tr(double degrees) {
+    return degrees / (180.0 / M_PI);
+}
+
+//----------------------------------------------------------------------------------------
 
 class AP {
 public:;
@@ -19,19 +27,29 @@ public:;
     	int	Send(const char*);
     	int	Reply();
     	int	GetCC();	
-	void	Bump(float dx, float dy);
+	void	Bump(double dx, double dy);
     	void	Stop();
     	void	Done();
     	void	Siderial(); 
-    	void	LongFormat();	
+	void	LongFormat();	
 	void	Log(); 
-    	float	Elevation();
-    	float	Dec(); 
-    	float	RA();	
-	float	Azimuth(); 
-  	int	SetRate(float ra, float dec); 
-	int	SetRA(float ra); 
-	int	SetDec(float dec);	
+    	double	Elevation();
+    	double	Dec(); 
+    	double	RA();	
+	double	Azimuth(); 
+  	double	SiderialTime();	
+	double	LocalTime();	
+	int	SetRate(double ra, double dec); 
+	int	SetRA(double ra); 
+	int	SetDec(double dec);	
+
+
+	double	ra_dec_to_elevation(double ra, double dec);
+	double	ra_dec_to_azimuth(double ra, double dec);
+	double	el_az_to_dec(double elevation, double azimuth);
+	double	el_az_to_ra(double elevation, double azimuth);
+
+	void	test_conversions();
 	
 	int	Goto();	
 	int 	fd;
@@ -40,16 +58,19 @@ public:;
 	char	short_format;
 	char	trace;
 private:
-    	float	GetF();
-	float	GetF_RA();
+    	double	GetF();
+	double	GetF_RA();
 
-	float	ra_set;
-	float	dec_set;
+	double	ra_set;
+	double	dec_set;
 
-	float	last_ra;
-	float	last_dec;
-	float	last_az;
-	float	last_el;
+	double	last_ra;
+	double	last_dec;
+	double	last_az;
+	double	last_el;
+	double	last_st;
+	double	latitude;
+	double	longitude;
 };
 
 //----------------------------------------------------------------------------------------
@@ -140,6 +161,19 @@ int AP::Init()
     
     set_interface_attribs (fd, B9600, 0);  // set speed to 115,200 bps, 8n1 (no parity)
     set_blocking (fd, 0);                // set no blocking
+    
+    Send("#");
+    Send("U#");
+    Send(":Gt#");
+
+    latitude = GetF();
+    printf("lat %f\n", latitude); 
+    
+    Send(":Gg#");
+    longitude = GetF();
+    printf("long %f\n", longitude);
+    last_st = SiderialTime(); 
+    //test_conversions(); 
     return 0;
 }
 
@@ -166,10 +200,10 @@ int AP::Send(const char *cmd)
 
 //----------------------------------------------------------------------------------------
 
-void AP::Bump(float dx, float dy)
+void AP::Bump(double dx, double dy)
 {
 	
-    int min_move = 5;
+    int min_move = 0;
     int idx = dx * 1000.0;
     int idy = dy * 1000.0;
 
@@ -227,26 +261,116 @@ void AP::LongFormat()
 
 //----------------------------------------------------------------------------------------
 
+
+double	AP::ra_dec_to_elevation(double ra, double dec)
+{
+    	double ha = (15.0 * last_st) - (15 * ra);
+	if (ha < 0) ha = (360 + ha);
+
+	double sin_alt = sin(tr(dec)) * sin(tr(latitude)) + cos(tr(dec)) * cos(tr(latitude)) * cos(tr(ha));
+
+	double alt = td(asin(sin_alt));
+        return alt;
+}
+
+//----------------------------------------------------------------------------------------
+
+double	AP::ra_dec_to_azimuth(double ra, double dec)
+{
+    	double ha = (15.0 * last_st) - (15 * ra);
+	if (ha < 0) ha = (360 + ha);
+	double sin_alt = sin(tr(dec)) * sin(tr(latitude)) + cos(tr(dec)) * cos(tr(latitude)) * cos(tr(ha));
+
+	double alt = td(asin(sin_alt));
+	double cos_az = (sin(tr(dec)) - sin(tr(alt)) * sin(tr(latitude))) / (cos(tr(alt)) * cos(tr(latitude)));
+	double az = td(acos(cos_az));
+        return az;
+}
+
+//----------------------------------------------------------------------------------------
+
+double	AP::el_az_to_dec(double elevation, double azimuth)
+{
+    	double sin_dec = sin(tr(elevation)) * sin(tr(latitude)) + cos(tr(elevation)) * cos(tr(latitude)) * cos(tr(azimuth));
+	double new_dec = td(asin(sin_dec));
+        
+        return new_dec;
+}
+
+//----------------------------------------------------------------------------------------
+
+double	AP::el_az_to_ra(double elevation, double azimuth)
+{
+       	double sin_dec = sin(tr(elevation)) * sin(tr(latitude)) + cos(tr(elevation)) * cos(tr(latitude)) * cos(tr(azimuth));
+	double new_dec = td(asin(sin_dec));
+        
+ 	double cos_h = (sin(tr(elevation)) - sin(tr(latitude)) * sin(tr(new_dec)))
+			/ ( cos(tr(latitude)) * cos(tr(new_dec)) );
+
+	double new_h = td(acos(cos_h));
+	
+	new_h /= 15.0;
+	
+	double new_ra = last_st + new_h;
+
+        return new_ra;
+}
+
+//----------------------------------------------------------------------------------------
+
+
 void AP::Log()
 {
 	last_az = Azimuth();
 	last_el = Elevation();
+	last_st = SiderialTime();	
 	last_ra = RA();
 	last_dec = Dec();
+
+	//printf("Local is %f\n", LocalTime());	
+	printf("stime = %f\taz = %f\t el = %f\t ra = %f\t dec = %f\n", last_st, last_az, last_el, last_ra, last_dec);
 	
-	printf("az = %f\t el = %f\t ra = %f\t dec = %f\n", last_az, last_el, last_ra, last_dec);
-	
-	if (last_dec < -20 || last_dec > 70 || last_el < 20.0 || last_az > 190) {
+	if (last_dec < -20 || last_dec > 70 || last_el < 20.0 || last_az > 195) {
 		Stop();	
 		Done();
 		printf("emergency limit\n");
 		exit(-1); 	
 	}
+
+	//printf("az %f el %f\n", ra_dec_to_azimuth(last_ra, last_dec), ra_dec_to_elevation(last_ra, last_dec));
+	//printf("ra %f dec %f\n", el_az_to_ra(last_el, last_az), el_az_to_dec(last_el, last_az));	
+	return;
 }
+
+
+void  AP::test_conversions()
+{
+	double	ra;
+	double	dec;
+
+
+	for (ra = 0; ra < 23.9; ra += 0.5) {
+		for (dec = -89; dec < 89; dec+=10) {
+			double el = ra_dec_to_elevation(ra, dec);
+			double az = ra_dec_to_azimuth(ra, dec);
+		
+			if (el > 0 && az > 0) {	
+				double ra1;
+				double dec1;
+
+				ra1 = el_az_to_ra(el, az);
+				dec1 = el_az_to_dec(el, az);
+
+				printf("<%f %f> <%f %f> <%f %f>\n", ra, dec, el, az, ra1, dec1);
+			}	
+		}
+	}
+}
+
 
 //----------------------------------------------------------------------------------------
 
-float AP::GetF()
+double AP::GetF()
 {
 	Reply();
 	int	a,b,c;
@@ -258,20 +382,21 @@ float AP::GetF()
 	else {
 		sscanf(reply, "%d*%d:%d#", &a, &b, &c);
 	}	
-	float v = a + (b /60.0) + (c / 3600.0);
+	double v = a + (b /60.0) + (c / 3600.0);
 	return v;
 }
 
 //----------------------------------------------------------------------------------------
 
-float AP::GetF_RA()
+double AP::GetF_RA()
 {
         Reply();
         int     hh, mm;
 	float	ss;
-        sscanf(reply, "%d:%d:%f#", &hh, &mm, &ss);
         
-	float v = hh + (mm /60.0) + (ss / 3600.0);
+	sscanf(reply, "%d:%d:%f#", &hh, &mm, &ss);
+        
+	double v = hh + (mm /60.0) + (ss / 3600.0);
         return v;
 }
 
@@ -279,7 +404,7 @@ float AP::GetF_RA()
 
 //----------------------------------------------------------------------------------------
 
-float AP::Dec()
+double AP::Dec()
 {	
 	Send(":GD#");
 	return(GetF());
@@ -287,7 +412,7 @@ float AP::Dec()
 
 //----------------------------------------------------------------------------------------
 
-float AP::RA()
+double AP::RA()
 {
         Send(":GR#");
         return(GetF_RA());
@@ -295,7 +420,24 @@ float AP::RA()
 
 //----------------------------------------------------------------------------------------
 
-float AP::Azimuth()
+double AP::LocalTime()
+{
+        Send(":GL#");
+        return GetF_RA();
+}
+
+
+//----------------------------------------------------------------------------------------
+
+double AP::SiderialTime()
+{
+	Send(":GS#");
+	return GetF_RA();
+}
+
+//----------------------------------------------------------------------------------------
+
+double AP::Azimuth()
 {
         Send(":GZ#");
         return(GetF());
@@ -304,7 +446,7 @@ float AP::Azimuth()
 
 //----------------------------------------------------------------------------------------
 
-float AP::Elevation()
+double AP::Elevation()
 {	
 	Send(":GA#");
 	return(GetF());
@@ -322,7 +464,7 @@ Defines the commanded Declination, DEC. Command may be issued in long or short f
 
 //----------------------------------------------------------------------------------------
 
-int AP::SetRA(float ra)
+int AP::SetRA(double ra)
 {
 	char	buf[256];
 	int	hour;
@@ -354,7 +496,7 @@ int AP::SetRA(float ra)
 
 //----------------------------------------------------------------------------------------
 
-int AP::SetDec(float dec)
+int AP::SetDec(double dec)
 {
         char    buf[256];
         int     d;
@@ -418,7 +560,7 @@ this means to slow down RA by 15arcsec/sec * 0.0448 = 0.072 arcsec/sec
 
 //Set Rate of 1.0, 0.0 is the normal for RA/DEC
 
-int AP::SetRate(float ra, float dec)
+int AP::SetRate(double ra, double dec)
 {
 	ra = ra - 1.0;
 	dec = dec;

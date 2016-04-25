@@ -192,8 +192,8 @@ void Planet::MinDev()
 
 	Planet::Planet()
 {
-	width = 3072; 
-	height = 2048;
+	width = 3072/2; 
+	height = 2048/2;
 	frame = 0;
 	background = 0;
 	dev = 100;
@@ -240,10 +240,10 @@ void Planet::InitCam(int cx, int cy, int width, int height)
     setValue(CONTROL_GAIN, 0, false);
     printf("max %d\n", getMax(CONTROL_BANDWIDTHOVERLOAD)); 
 
-    setValue(CONTROL_BANDWIDTHOVERLOAD, 100, false); //lowest transfer speed
+    setValue(CONTROL_BANDWIDTHOVERLOAD, 20, false); //lowest transfer speed
     setValue(CONTROL_EXPOSURE, 10*1000, false);
     setValue(CONTROL_HIGHSPEED, 1, false);
-    setStartPos(0, 0);
+    setStartPos(1000, 500);
     printf("init done\n");
 }
 
@@ -359,7 +359,7 @@ int find_guide()
 	
     sprintf(buf, "/media/benoit/18A6395AA6393A18/video/out%ld.ser", time(0));
     out = fopen(buf, "wb"); 
-    write_header(out, g->height, g->width, 1000);
+    write_header(out, g->width, g->height, 1000);
     int cnt = 0;
 
     Mat resized;
@@ -367,13 +367,18 @@ int find_guide()
     while(1) {
         //ap->Log(); 
 	g->GetFrame();
-	//fwrite(g->image.ptr<uchar>(0), 1, g->width*g->height*2, out);	
+
+	ushort *src;
+
+	src = (ushort*)g->image.ptr<uchar>(0);
+	
+	fwrite(src, 1, g->width*g->height*2, out);	
 	cnt++;	
         
         float scale = cvGetTrackbarPos("scale", "video") / 100.0;
 	g_scale = scale;
 	
-	if (g->frame % 5 == 0) { 
+	if (g->frame % 1 == 0) { 
 		g->MinDev();	
         	resize(g->image, resized, Size(0, 0), scale, scale, INTER_AREA);
 		DrawVal(resized, "exp ", g->exp, 0, "sec");
@@ -388,9 +393,9 @@ int find_guide()
         
 		if (c == 27) {
             		fseek(out, 0, SEEK_SET);
-			write_header(out, g->height, g->width, cnt);	
+			write_header(out, g->width, g->height, cnt);	
 			stopCapture();
-            		closeCamera(); 
+            		closeCamera();
 	    		return 0; 
         	}
    	} 
