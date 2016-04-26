@@ -31,7 +31,6 @@ to maintain a single distribution point for the source code.
 
 //////////////////////// Includes /////////////////////////////////////////////
 
-#include "stdafx.h"
 #include "AACoordinateTransformation.h"
 #include <cmath>
 #include <cassert>
