@@ -138,7 +138,7 @@ void set_blocking (int fd, int should_block)
 
 //----------------------------------------------------------------------------------------
 
-const char *portname = "/dev/ttyUSB0";
+const char *portname = "/dev/ttyUSB1";
 
 int AP::Init()
 {
@@ -264,7 +264,7 @@ void AP::LongFormat()
 
 double	AP::ra_dec_to_elevation(double ra, double dec)
 {
-    	double ha = (15.0 * last_st) - (15 * ra);
+	double ha = (15.0 * last_st) - (15 * ra);	
 	if (ha < 0) ha = (360 + ha);
 
 	double sin_alt = sin(tr(dec)) * sin(tr(latitude)) + cos(tr(dec)) * cos(tr(latitude)) * cos(tr(ha));
@@ -278,7 +278,7 @@ double	AP::ra_dec_to_elevation(double ra, double dec)
 double	AP::ra_dec_to_azimuth(double ra, double dec)
 {
     	double ha = (15.0 * last_st) - (15 * ra);
-	if (ha < 0) ha = (360 + ha);
+
 	double sin_alt = sin(tr(dec)) * sin(tr(latitude)) + cos(tr(dec)) * cos(tr(latitude)) * cos(tr(ha));
 
 	double alt = td(asin(sin_alt));
@@ -301,7 +301,19 @@ double	AP::el_az_to_dec(double elevation, double azimuth)
 
 double	AP::el_az_to_ra(double elevation, double azimuth)
 {
-       	double sin_dec = sin(tr(elevation)) * sin(tr(latitude)) + cos(tr(elevation)) * cos(tr(latitude)) * cos(tr(azimuth));
+        elevation = tr(elevation);
+	azimuth = tr(azimuth);
+
+        double ha = atan2(cos(elevation)*sin(azimuth), sin(elevation)*cos(tr(latitude))+cos(elevation)*cos(azimuth)*sin(tr(latitude)));
+
+
+        ha = td(ha);
+        ha /= 15.0;
+            
+        return ha;
+
+/*
+	double sin_dec = sin(tr(elevation)) * sin(tr(latitude)) + cos(tr(elevation)) * cos(tr(latitude)) * cos(tr(azimuth));
 	double new_dec = td(asin(sin_dec));
         
  	double cos_h = (sin(tr(elevation)) - sin(tr(latitude)) * sin(tr(new_dec)))
@@ -314,6 +326,7 @@ double	AP::el_az_to_ra(double elevation, double azimuth)
 	double new_ra = last_st + new_h;
 
         return new_ra;
+*/
 }
 
 //----------------------------------------------------------------------------------------
@@ -337,7 +350,7 @@ void AP::Log()
 		exit(-1); 	
 	}
 
-	//printf("az %f el %f\n", ra_dec_to_azimuth(last_ra, last_dec), ra_dec_to_elevation(last_ra, last_dec));
+	printf("az %f el %f\n", ra_dec_to_azimuth(last_ra, last_dec), ra_dec_to_elevation(last_ra, last_dec));
 	//printf("ra %f dec %f\n", el_az_to_ra(last_el, last_az), el_az_to_dec(last_el, last_az));	
 	return;
 }
@@ -347,22 +360,36 @@ void  AP::test_conversions()
 {
 	double	ra;
 	double	dec;
+	double	az;
+	double	el;
 
+	if (0)
+	for (az = 0; az < 359; az += 20) {
+		for (el = 20; el < 140; el += 10) {
+			ra = el_az_to_ra(el, az);
+			dec = el_az_to_dec(el, az);
+			double az1 = ra_dec_to_azimuth(ra, dec);
+			double el1 = ra_dec_to_elevation(ra, dec);
 
+			printf("<%f %f> <%f %f> <%f %f>\n", az, el, ra, dec, az1, el1);
+		}
+	}
+
+	if (1)
 	for (ra = 0; ra < 23.9; ra += 0.5) {
 		for (dec = -89; dec < 89; dec+=10) {
 			double el = ra_dec_to_elevation(ra, dec);
 			double az = ra_dec_to_azimuth(ra, dec);
 		
-			if (el > 0 && az > 0) {	
+			//if (el > 0 && az > 0) {	
 				double ra1;
 				double dec1;
 
 				ra1 = el_az_to_ra(el, az);
 				dec1 = el_az_to_dec(el, az);
 
-				printf("<%f %f> <%f %f> <%f %f>\n", ra, dec, el, az, ra1, dec1);
-			}	
+				printf("<%f %f> <%f %f> <%f %f>\n", ra, dec, az, el, ra1, dec1);
+			//}	
 		}
 	}
 }

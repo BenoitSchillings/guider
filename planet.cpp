@@ -192,8 +192,8 @@ void Planet::MinDev()
 
 	Planet::Planet()
 {
-	width = 3072/2; 
-	height = 2048/2;
+	width = 3072; 
+	height = 2048;
 	frame = 0;
 	background = 0;
 	dev = 100;
@@ -240,7 +240,7 @@ void Planet::InitCam(int cx, int cy, int width, int height)
     setValue(CONTROL_GAIN, 0, false);
     printf("max %d\n", getMax(CONTROL_BANDWIDTHOVERLOAD)); 
 
-    setValue(CONTROL_BANDWIDTHOVERLOAD, 20, false); //lowest transfer speed
+    setValue(CONTROL_BANDWIDTHOVERLOAD, 80, false); //lowest transfer speed
     setValue(CONTROL_EXPOSURE, 10*1000, false);
     setValue(CONTROL_HIGHSPEED, 1, false);
     setStartPos(1000, 500);
@@ -328,7 +328,7 @@ void ui_setup()
         createTrackbar("gain", "video", 0, 600, 0);
         createTrackbar("exp", "video", 0, 1000, 0);
         createTrackbar("mult", "video", 0, 100, 0);
-        createTrackbar("Sub", "video", 0, 500, 0);
+        createTrackbar("Sub", "video", 0, 32500, 0);
         createTrackbar("scale", "video", 0, 100, 0);
         
 	setTrackbarPos("gain", "video", g_gain);
@@ -386,7 +386,8 @@ int find_guide()
         	DrawVal(resized, "frame", g->frame*1.0, 2, "");
  		
 	        resized = resized * (0.1 * cvGetTrackbarPos("mult", "video"));
-               	center(resized); 
+               	resized = resized - (cvGetTrackbarPos("Sub", "video"));	
+		center(resized); 
 		cv::imshow("video_out",  resized);
         	char c = cvWaitKey(1);
         	hack_gain_upd(g);
