@@ -297,42 +297,28 @@ double	AP::ra_dec_to_azimuth(double ra, double dec)
 
 double	AP::el_az_to_dec(double elevation, double azimuth)
 {
-    	double sin_dec = sin(tr(elevation)) * sin(tr(latitude)) + cos(tr(elevation)) * cos(tr(latitude)) * cos(tr(azimuth));
-	double new_dec = td(asin(sin_dec));
+        CAACoordinateTransformation     tr;
+        CAA2DCoordinate c;
         
-        return new_dec;
+
+        c = tr.Horizontal2Equatorial(azimuth, elevation, latitude);
+
+
+       return c.Y;
 }
 
 //----------------------------------------------------------------------------------------
 
 double	AP::el_az_to_ra(double elevation, double azimuth)
 {
-        elevation = tr(elevation);
-	azimuth = tr(azimuth);
+       	CAACoordinateTransformation     tr;
+       	CAA2DCoordinate c;
 
-        double ha = atan2(cos(elevation)*sin(azimuth), sin(elevation)*cos(tr(latitude))+cos(elevation)*cos(azimuth)*sin(tr(latitude)));
-
-
-        ha = td(ha);
-        ha /= 15.0;
-            
-        return ha;
-
-/*
-	double sin_dec = sin(tr(elevation)) * sin(tr(latitude)) + cos(tr(elevation)) * cos(tr(latitude)) * cos(tr(azimuth));
-	double new_dec = td(asin(sin_dec));
-        
- 	double cos_h = (sin(tr(elevation)) - sin(tr(latitude)) * sin(tr(new_dec)))
-			/ ( cos(tr(latitude)) * cos(tr(new_dec)) );
-
-	double new_h = td(acos(cos_h));
-	
-	new_h /= 15.0;
-	
-	double new_ra = last_st + new_h;
-
-        return new_ra;
-*/
+ 
+	c = tr.Horizontal2Equatorial(azimuth, elevation, latitude);
+           
+ 
+	return c.X * 15.0;
 }
 
 //----------------------------------------------------------------------------------------
