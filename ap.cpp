@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 
+#include "AACoordinateTransformation.h"
 //----------------------------------------------------------------------------------------
 #define NOT_SET -32000
 //----------------------------------------------------------------------------------------
@@ -264,27 +265,32 @@ void AP::LongFormat()
 
 double	AP::ra_dec_to_elevation(double ra, double dec)
 {
-	double ha = (15.0 * last_st) - (15 * ra);	
-	if (ha < 0) ha = (360 + ha);
 
-	double sin_alt = sin(tr(dec)) * sin(tr(latitude)) + cos(tr(dec)) * cos(tr(latitude)) * cos(tr(ha));
+        double ha = last_st - ra;
+ 	
+	CAACoordinateTransformation	tr;
 
-	double alt = td(asin(sin_alt));
-        return alt;
+	CAA2DCoordinate c;
+	
+	c = tr.Equatorial2Horizontal(ha, dec, latitude);
+       	
+	return c.Y;
+ 
 }
 
 //----------------------------------------------------------------------------------------
 
 double	AP::ra_dec_to_azimuth(double ra, double dec)
 {
-    	double ha = (15.0 * last_st) - (15 * ra);
+       double ha = last_st - ra;
 
-	double sin_alt = sin(tr(dec)) * sin(tr(latitude)) + cos(tr(dec)) * cos(tr(latitude)) * cos(tr(ha));
+       CAACoordinateTransformation     tr;
 
-	double alt = td(asin(sin_alt));
-	double cos_az = (sin(tr(dec)) - sin(tr(alt)) * sin(tr(latitude))) / (cos(tr(alt)) * cos(tr(latitude)));
-	double az = td(acos(cos_az));
-        return az;
+       CAA2DCoordinate c;
+
+       c = tr.Equatorial2Horizontal(ha, dec, latitude);
+
+       return c.X;
 }
 
 //----------------------------------------------------------------------------------------
