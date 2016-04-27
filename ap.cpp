@@ -269,7 +269,7 @@ double	AP::ra_dec_to_elevation(double ra, double dec)
 {
 
         double ha = last_st - ra;
- 	
+ 
 	CAACoordinateTransformation	tr;
 
 	CAA2DCoordinate c;
@@ -285,6 +285,7 @@ double	AP::ra_dec_to_elevation(double ra, double dec)
 double	AP::ra_dec_to_azimuth(double ra, double dec)
 {
        double ha = last_st - ra;
+
 
        CAACoordinateTransformation     tr;
 
@@ -320,7 +321,7 @@ double	AP::el_az_to_ra(double elevation, double azimuth)
 	c = tr.Horizontal2Equatorial(azimuth, elevation, latitude);
            
  
-	return c.X * 15.0;
+	return c.X;
 }
 
 //----------------------------------------------------------------------------------------
@@ -344,8 +345,13 @@ void AP::Log()
 		exit(-1); 	
 	}
 
-	printf("az %f el %f\n", ra_dec_to_azimuth(last_ra, last_dec), ra_dec_to_elevation(last_ra, last_dec));
-	//printf("ra %f dec %f\n", el_az_to_ra(last_el, last_az), el_az_to_dec(last_el, last_az));	
+	double az = ra_dec_to_azimuth(last_ra, last_dec);
+	double el = ra_dec_to_elevation(last_ra, last_dec);
+
+	printf("az %f el %f\n", az, el);
+
+		
+	printf("ra %f dec %f\n", el_az_to_ra(el, az), el_az_to_dec(el, az));	
 	return;
 }
 

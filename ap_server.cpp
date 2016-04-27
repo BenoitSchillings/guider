@@ -115,17 +115,20 @@ int APServer::Init()
     short_format = 0;
 
     trace = 0; 
+    
     fd = open (portname, O_RDWR | O_NOCTTY | O_SYNC);
-    if (fd < 0)
-    {
+    
+    if (fd < 0) {
         printf("error %d opening %s: %s\n", errno, portname, strerror (errno));
-       
+   	return -1; 
     }
-    fd = open (portname1, O_RDWR | O_NOCTTY | O_SYNC);
-     if (fd < 0)
-    {
-        printf("error %d opening %s: %s\n", errno, portname, strerror (errno));
-        exit(-1);
+   
+    if (fd < 0) { 
+    	fd = open (portname1, O_RDWR | O_NOCTTY | O_SYNC);
+    	if (fd < 0) {
+        	printf("error %d opening %s: %s\n", errno, portname1, strerror (errno));
+        	return(-1);
+	}
     }
 
     set_interface_attribs (fd, B9600, 0);  // set speed to 115,200 bps, 8n1 (no parity)
@@ -133,9 +136,6 @@ int APServer::Init()
     
     Send("#");
     Send("U#");
-    Send(":Gt#");
-
-
     return 0;
 }
 
@@ -332,12 +332,23 @@ int APServer::Reply()
 int main()
 {
     APServer  *ap;
-    
+   
+    //zmq::context_t context (1);
+    //zmq::socket_t socket (context, ZMQ_REP);
+    //socket.bind ("tcp://*:5555");
+
+ 
     ap = new APServer();
-    
-    ap->Init();
-    ap->Send(":GR#");
-    
+  
+    int error = 0;
+ 
+    do { 
+	error = ap->Init();
+	if (error != 0) {
+		usleep(1000*1000);		//sleep for 1 second 
+	}
+    } while(error != 0);
+
     while(1) {
         ap->Log();
     }
