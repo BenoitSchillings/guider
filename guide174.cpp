@@ -6,6 +6,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "./tiny/tinyxml.h"
 #include <signal.h>
+#include <zmq.hpp>
+#include <iostream>
 
 bool sim = false;
 

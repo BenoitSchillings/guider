@@ -4,8 +4,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include <zmq.h>
-
+#include <zmq.hpp>
+#include <iostream>
 
 #include "AACoordinateTransformation.h"
 //----------------------------------------------------------------------------------------
@@ -46,7 +46,6 @@ public:;
 	int	SetRA(double ra); 
 	int	SetDec(double dec);	
 
-
 	double	ra_dec_to_elevation(double ra, double dec);
 	double	ra_dec_to_azimuth(double ra, double dec);
 	double	el_az_to_dec(double elevation, double azimuth);
@@ -61,7 +60,9 @@ public:;
 	char	short_format;
 	char	trace;
 private:
-    	double	GetF();
+    	zmq::context_t *ctx;	
+	zmq::socket_t  *socket;	
+	double	GetF();
 	double	GetF_RA();
 
 	double	ra_set;
@@ -78,73 +79,36 @@ private:
 
 //----------------------------------------------------------------------------------------
 
-
-int set_interface_attribs (int fd, int speed, int parity)
+int AP::Send(const char *cmd)
 {
-    struct termios tty;
-    memset (&tty, 0, sizeof tty);
-    if (tcgetattr (fd, &tty) != 0)
-    {
-        printf("error %d from tcgetattr", errno);
-        return -1;
-    }
-    
-    cfsetospeed (&tty, speed);
-    cfsetispeed (&tty, speed);
-    
-    tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;     // 8-bit chars
-    // disable IGNBRK for mismatched speed tests; otherwise receive break
-    // as \000 chars
-    tty.c_iflag &= ~IGNBRK;         // disable break processing
-    tty.c_lflag = 0;                // no signaling chars, no echo,
-    // no canonical processing
-    tty.c_oflag = 0;                // no remapping, no delays
-    tty.c_cc[VMIN]  = 0;            // read doesn't block
-    tty.c_cc[VTIME] = 5;            // 0.5 seconds read timeout
-    
-    tty.c_iflag &= ~(IXON | IXOFF | IXANY); // shut off xon/xoff ctrl
-    
-    tty.c_cflag |= (CLOCAL | CREAD);// ignore modem controls,
-    // enable reading
-    tty.c_cflag &= ~(PARENB | PARODD);      // shut off parity
-    tty.c_cflag |= parity;
-    tty.c_cflag &= ~CSTOPB;
-    tty.c_cflag &= ~CRTSCTS;
-    
-    if (tcsetattr (fd, TCSANOW, &tty) != 0)
-    {
-        printf("error %d from tcsetattr", errno);
-        return -1;
-    }
-    return 0;
+	int	len = strlen(cmd) + 1;
+	
+	zmq::message_t request(len);
+	memcpy(request.data(), cmd, len);
+	printf("sending command %s\n", cmd);
+
+	socket->send(request);
+
+	zmq::message_t msg_reply;
+	socket->recv(&msg_reply);
+
+	int	reply_len = msg_reply.size();
+
+	reply[0] = 0;
+	
+	memcpy(reply, msg_reply.data(), reply_len); 
+	return 0;
 }
 
 //----------------------------------------------------------------------------------------
 
-void set_blocking (int fd, int should_block)
-{
-    struct termios tty;
-    memset (&tty, 0, sizeof tty);
-    if (tcgetattr (fd, &tty) != 0)
-    {
-        printf("error %d from tggetattr", errno);
-        return;
-    }
-    
-    tty.c_cc[VMIN]  = should_block ? 1 : 0;
-    tty.c_cc[VTIME] = 5;            // 0.5 seconds read timeout
-    
-    if (tcsetattr (fd, TCSANOW, &tty) != 0)
-        printf("error %d setting term attributes", errno);
-}
-
-
-//----------------------------------------------------------------------------------------
-
-const char *portname = "/dev/ttyUSB1";
 
 int AP::Init()
 {
+    ctx = new zmq::context_t(1);
+    socket = new zmq::socket_t(*ctx, ZMQ_REQ);
+    socket->connect ("tcp://localhost:5555");
+
     short_format = 0;
 
     ra_set = NOT_SET;
@@ -155,28 +119,15 @@ int AP::Init()
     last_el = NOT_SET;
 
     trace = 0; 
-    fd = open (portname, O_RDWR | O_NOCTTY | O_SYNC);
-    if (fd < 0)
-    {
-        printf("error %d opening %s: %s", errno, portname, strerror (errno));
-        return -1;
-    }
-    
-    set_interface_attribs (fd, B9600, 0);  // set speed to 115,200 bps, 8n1 (no parity)
-    set_blocking (fd, 0);                // set no blocking
-    
-    Send("#");
-    Send("U#");
-    Send(":Gt#");
+    Send("r:Gt#");
 
     latitude = GetF();
     printf("lat %f\n", latitude); 
     
-    Send(":Gg#");
+    Send("r:Gg#");
     longitude = GetF();
     printf("long %f\n", longitude);
     last_st = SiderialTime(); 
-    //test_conversions(); 
     return 0;
 }
 
@@ -195,14 +146,6 @@ AP::~AP()
 
 //----------------------------------------------------------------------------------------
 
-int AP::Send(const char *cmd)
-{
-   	if (trace) printf("cmd %s\n", cmd); 
-	return write(fd, cmd, strlen(cmd));
-}
-
-//----------------------------------------------------------------------------------------
-
 void AP::Bump(double dx, double dy)
 {
 	
@@ -217,16 +160,17 @@ void AP::Bump(double dx, double dy)
     if (idy<-999) idy = -999;
  
     if (idx > min_move) {
-        sprintf(buf, ":Me%03d#", idx);Send(buf);
+        sprintf(buf, "s:Me%03d#", idx);
+	Send(buf);
     }
      if (idx < (-min_move)) {
-        sprintf(buf, ":Mw%03d#", -idx);Send(buf);
+        sprintf(buf, "s:Mw%03d#", -idx);Send(buf);
     }
     if (idy > min_move) {
-        sprintf(buf, ":Ms%03d#", idy);Send(buf);
+        sprintf(buf, "s:Ms%03d#", idy);Send(buf);
     }
     if (idy < (-min_move)) {
-        sprintf(buf, ":Mn%03d#", -idy);Send(buf);
+        sprintf(buf, "s:Mn%03d#", -idy);Send(buf);
     }
     usleep((fabs(dx) + fabs(dy)) * 1000000.0);
 }
@@ -236,7 +180,7 @@ void AP::Bump(double dx, double dy)
 
 void AP::Stop()
 {
-	Send(":Q#");
+	Send("s:Q#");
 }
 
 //----------------------------------------------------------------------------------------
@@ -244,7 +188,7 @@ void AP::Stop()
 
 void AP::Done()
 {
-	Send(":RT9#");
+	Send("s:RT9#");
 }
 
 //----------------------------------------------------------------------------------------
@@ -252,14 +196,14 @@ void AP::Done()
 
 void AP::Siderial()
 {
-        Send(":RT2#");
+        Send("s:RT2#");
 }
 
 //----------------------------------------------------------------------------------------
 
 void AP::LongFormat()
 {
-	Send(":U#");
+	Send("s:U#");
 }
 
 //----------------------------------------------------------------------------------------
@@ -399,7 +343,6 @@ void  AP::test_conversions()
 
 double AP::GetF()
 {
-	Reply();
 	int	a,b,c;
 	
 	if (short_format == 1) {
@@ -417,7 +360,6 @@ double AP::GetF()
 
 double AP::GetF_RA()
 {
-        Reply();
         int     hh, mm;
 	float	ss;
         
@@ -433,7 +375,7 @@ double AP::GetF_RA()
 
 double AP::Dec()
 {	
-	Send(":GD#");
+	Send("r:GD#");
 	return(GetF());
 }
 
@@ -441,7 +383,7 @@ double AP::Dec()
 
 double AP::RA()
 {
-        Send(":GR#");
+        Send("r:GR#");
         return(GetF_RA());
 }
 
@@ -449,7 +391,7 @@ double AP::RA()
 
 double AP::LocalTime()
 {
-        Send(":GL#");
+        Send("r:GL#");
         return GetF_RA();
 }
 
@@ -458,7 +400,7 @@ double AP::LocalTime()
 
 double AP::SiderialTime()
 {
-	Send(":GS#");
+	Send("r:GS#");
 	return GetF_RA();
 }
 
@@ -466,7 +408,7 @@ double AP::SiderialTime()
 
 double AP::Azimuth()
 {
-        Send(":GZ#");
+        Send("r:GZ#");
         return(GetF());
 }
 
@@ -475,7 +417,7 @@ double AP::Azimuth()
 
 double AP::Elevation()
 {	
-	Send(":GA#");
+	Send("r:GA#");
 	return(GetF());
 }
 
@@ -512,7 +454,7 @@ int AP::SetRA(double ra)
 	ra *= 10.0;
 	sec10 = ra;
 
-	sprintf(buf, ":Sr %d:%d:%d.%d#", hour, min, sec, sec10);
+	sprintf(buf, "c:Sr %d:%d:%d.%d#", hour, min, sec, sec10);
 
 	Send(buf);
 	GetCC();
@@ -551,7 +493,7 @@ int AP::SetDec(double dec)
         dec *= 60.0;
         s = dec;
 
-        sprintf(buf, ":Sd %c%d*%d:%d#", sign, d, m, s);
+        sprintf(buf, "c:Sd %c%d*%d:%d#", sign, d, m, s);
 	if (trace) printf("%s\n", buf);
 	Send(buf);
 	GetCC();
@@ -572,7 +514,7 @@ int AP::Goto()
 		return -1;
 	}
 	
-	Send(":MS#");
+	Send("c:MS#");
 	GetCC();
 }
 
@@ -603,7 +545,7 @@ int AP::SetRate(double ra, double dec)
 		ra = -ra;	
 	}
 	
-	sprintf(buf, ":RR %c%f#", sign, ra);
+	sprintf(buf, "c:RR %c%f#", sign, ra);
 	Send(buf);
 
 	if (dec >= 0) {
@@ -614,9 +556,8 @@ int AP::SetRate(double ra, double dec)
 		dec = -dec;
 	}
 
-	sprintf(buf, ":RD %c%f#", sign, dec);
+	sprintf(buf, "c:RD %c%f#", sign, dec);
 	Send(buf);
-	Reply();
 }
 
 //----------------------------------------------------------------------------------------
@@ -627,14 +568,7 @@ int AP::GetCC()
     char        c;
     int		n;
 
-    usleep(15000);
-    do {
-        usleep(1000);
-        total_time += 1000;
-
-        n = read(fd, &c, 1);
-    } while(n == 0 && total_time<1000000);
-    if (trace) printf("%c\n", c);
+    if (trace) printf("%c\n", reply[0]);
     return 0;
 }
 
@@ -643,42 +577,6 @@ int AP::GetCC()
 
 int AP::Reply()
 {
-    reply[0] = 0;
-    int	idx = 0;
-    long	total_time = 0;
-    char	c;
-   
-    usleep(15000); 
-    do {
-        usleep(1000);
-        total_time += 1000;
-        
-        int n = read(fd, &c, 1);
-        if (n > 0) {
-            reply[idx] = c;
-            idx++;
-        }	
-    } while(c != '#' && total_time<1000000);
     if (trace) printf("%s\n", reply); 
-    return idx;
-}
-
-//----------------------------------------------------------------------------------------
-
-int tmain()
-{
-    AP  *ap;
-    
-    ap = new AP();
-    
-    ap->Init();
-    ap->Send(":GR#");
-    ap->Reply();
-    printf("%s\n", ap->reply); 
-    
-    ap->Send(":GA#");
-    ap->Reply();
-    printf("%s\n", ap->reply);
-    
-    return 0;
+    return strlen(reply);
 }

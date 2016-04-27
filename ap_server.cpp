@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
-#include <zmq.h>
+#include <zmq.hpp>
 
 
 //----------------------------------------------------------------------------------------
@@ -19,7 +19,7 @@ public:;
 	int	Init();
     	int	Send(const char*);
     	int	Reply();
-    	int	GetCC();
+    	char	GetCC();
     	void	Stop();
     	void	Done();
     	void	Siderial(); 
@@ -182,6 +182,9 @@ void APServer::Done()
 
 void APServer::Log()
 {
+
+	printf("log\n"); return;
+	
 	double last_az = Azimuth();
 	double last_el = Elevation();
 	double last_st = SiderialTime();	
@@ -285,7 +288,7 @@ double APServer::Elevation()
 
 //----------------------------------------------------------------------------------------
 
-int APServer::GetCC()
+char APServer::GetCC()
 {
     long        total_time = 0;
     char        c;
@@ -299,7 +302,7 @@ int APServer::GetCC()
         n = read(fd, &c, 1);
     } while(n == 0 && total_time<1000000);
     if (trace) printf("%c\n", c);
-    return 0;
+    return c;
 }
 
 
@@ -314,9 +317,8 @@ int APServer::Reply()
    
     usleep(15000); 
     do {
-        usleep(1000);
-        total_time += 1000;
-        
+        total_time += 500000;
+        printf("reply wait\n"); 
         int n = read(fd, &c, 1);
         if (n > 0) {
             reply[idx] = c;
@@ -329,14 +331,19 @@ int APServer::Reply()
 
 //----------------------------------------------------------------------------------------
 
+
+
 int main()
 {
     APServer  *ap;
-   
-    //zmq::context_t context (1);
-    //zmq::socket_t socket (context, ZMQ_REP);
-    //socket.bind ("tcp://*:5555");
+    char      command[1024];
+ 
+    zmq::context_t context (1);
+    zmq::socket_t socket (context, ZMQ_REP);
+    socket.bind ("tcp://*:5555");
 
+    int timeout = 250;
+    socket.setsockopt (ZMQ_RCVTIMEO, &timeout, sizeof (int));
  
     ap = new APServer();
   
@@ -349,8 +356,37 @@ int main()
 	}
     } while(error != 0);
 
-    while(1) {
-        ap->Log();
+
+     while(1) {
+        
+       	zmq::message_t request;
+        int result = socket.recv (&request);
+	if (request.size() > 0) {
+		memcpy(command, request.data(), request.size());
+		printf("got request %s\n", command);
+
+		if (command[0] == 's') {	//silent command. not waiting for reply from the mount
+			ap->Send(command + 1);
+			ap->reply[0] = 0;
+		}
+
+		if (command[0] == 'c') {
+			ap->Send(command + 1);
+			ap->reply[0] = ap->GetCC();	
+			ap->reply[1] = 0;
+		}
+
+		if (command[0] == 'r') {
+			ap->Send(command + 1);
+			ap->Reply();	
+		}
+
+		zmq::message_t msg_reply(strlen(ap->reply) + 1);
+        	memcpy (msg_reply.data (), ap->reply, strlen(ap->reply) + 1);
+        	socket.send(msg_reply);
+	}
+	else
+		ap->Log();
     }
     
     return 0;
