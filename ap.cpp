@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <zmq.h>
+
 
 #include "AACoordinateTransformation.h"
 //----------------------------------------------------------------------------------------

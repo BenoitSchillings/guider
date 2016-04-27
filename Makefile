@@ -6,7 +6,7 @@ CC = g++
 #LDLIB = /usr/local/lib
 TINY = ./tinyobj/tinyxmlerror.cpp.o ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o
 #OPENCV = $(shell pkg-config --cflags opencv) $(shell pkg-config --libs opencv)
-OPENCV = -I/usr/local/include/opencv -I/usr/local/include -L/usr/local/lib -lopencv_calib3d -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_highgui -lopencv_imgproc -lopencv_ml -lopencv_objdetect -lopencv_photo -lopencv_stitching -lopencv_superres -lopencv_ts -lopencv_video -lopencv_videostab 
+OPENCV = -I/usr/local/include/opencv -I/usr/local/include -L/usr/local/lib -lopencv_calib3d -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_highgui -lopencv_imgproc -lopencv_ml -lopencv_objdetect -lopencv_photo -lopencv_stitching -lopencv_superres -lopencv_ts -lopencv_video -lopencv_videostab -L/usr/local/lib -lzmq 
 
 USB =  -I./libusb/include  -L./libusb/$(platform) -lusb-1.0  
 
@@ -70,9 +70,12 @@ endif
 #endif
 
 
-all:guide174 planet
+all:guide174 planet ap_server
 guide174:  AACoordinateTransformation.cpp  ser.cpp ap.cpp guide174.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
 	$(CC) -march=native -O3 guide174.cpp  AACoordinateTransformation.cpp util.cpp $(TINY) -o guide174 $(CFLAGS)  $(OPENCV) -lASICamera
+
+ap_server:  ap_server.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
+	$(CC) -march=native -O3 ap_server.cpp util.cpp $(TINY) -o ap_server $(CFLAGS)
 
 planet: ser.cpp   AACoordinateTransformation.cpp  ap.cpp planet.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
 	$(CC) -march=native -O3 planet.cpp   AACoordinateTransformation.cpp   util.cpp $(TINY) -o planet $(CFLAGS)  $(OPENCV) -lASICamera
@@ -90,7 +93,7 @@ planet: ser.cpp   AACoordinateTransformation.cpp  ap.cpp planet.cpp util.cpp ./t
 	$(CC)  -c ./tiny/tinyxmlerror.cpp -o ./tinyobj/tinyxmlerror.cpp.o $(CFLAGS)
 
 clean:
-	rm -f guide174 planet
+	rm -f guide174 planet ap_server
 #pkg-config libusb-1.0 --cflags --libs
 #pkg-config opencv --cflags --libs
 
