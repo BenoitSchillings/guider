@@ -183,7 +183,6 @@ void APServer::Done()
 void APServer::Log()
 {
 
-	printf("log\n"); return;
 	
 	double last_az = Azimuth();
 	double last_el = Elevation();
@@ -317,14 +316,14 @@ int APServer::Reply()
    
     usleep(15000); 
     do {
-        total_time += 500000;
-        printf("reply wait\n"); 
+        total_time += 200000;
+        //printf("reply wait\n"); 
         int n = read(fd, &c, 1);
         if (n > 0) {
             reply[idx] = c;
             idx++;
         }	
-    } while(c != '#' && total_time<1000000);
+    } while(c != '#' && total_time<100000000);
     if (trace) printf("%s\n", reply); 
     return idx;
 }
@@ -385,8 +384,7 @@ int main()
         	memcpy (msg_reply.data (), ap->reply, strlen(ap->reply) + 1);
         	socket.send(msg_reply);
 	}
-	else
-		ap->Log();
+	ap->Log();
     }
     
     return 0;
