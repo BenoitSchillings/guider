@@ -868,6 +868,8 @@ int main(int argc, char **argv)
 	signal(SIGINT, intHandler);
 
     	ap = new AP();
+	ap->test_conversions();
+	return 0;	
 	ap->Init();
 	ap->LongFormat();	
 	ap->Siderial();	

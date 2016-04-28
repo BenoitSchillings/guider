@@ -85,7 +85,7 @@ int AP::Send(const char *cmd)
 	
 	zmq::message_t request(len);
 	memcpy(request.data(), cmd, len);
-	printf("sending command %s\n", cmd);
+	if (trace) printf("sending command %s\n", cmd);
 
 	socket->send(request);
 
@@ -97,6 +97,7 @@ int AP::Send(const char *cmd)
 	reply[0] = 0;
 	
 	memcpy(reply, msg_reply.data(), reply_len); 
+	if (trace) printf("reply %s\n", reply);	
 	return 0;
 }
 
@@ -263,9 +264,11 @@ double	AP::el_az_to_ra(double elevation, double azimuth)
 
  
 	c = tr.Horizontal2Equatorial(azimuth, elevation, latitude);
-           
- 
-	return c.X;
+
+	double ra = last_st - c.X;
+	if (ra < 0) ra = (24.0 + ra);
+
+	return ra; 
 }
 
 //----------------------------------------------------------------------------------------
@@ -299,6 +302,7 @@ void AP::Log()
 	return;
 }
 
+//----------------------------------------------------------------------------------------
 
 void  AP::test_conversions()
 {
@@ -307,35 +311,18 @@ void  AP::test_conversions()
 	double	az;
 	double	el;
 
-	if (0)
-	for (az = 0; az < 359; az += 20) {
-		for (el = 20; el < 140; el += 10) {
-			ra = el_az_to_ra(el, az);
-			dec = el_az_to_dec(el, az);
-			double az1 = ra_dec_to_azimuth(ra, dec);
-			double el1 = ra_dec_to_elevation(ra, dec);
+	latitude = 37;
+	longitude = 100;
+	last_st = 6.0;
+	double el1 = ra_dec_to_elevation(15.5, -44);
+	double az1 = ra_dec_to_azimuth(15.5, -44);	
+	printf("el = %f\n", el1);
+	printf("az = %f\n", (az1 + 180.0));
 
-			printf("<%f %f> <%f %f> <%f %f>\n", az, el, ra, dec, az1, el1);
-		}
-	}
+	double ra1 = el_az_to_ra(el1, az1);
+	double dec1 = el_az_to_dec(el1, az1);
 
-	if (1)
-	for (ra = 0; ra < 23.9; ra += 0.5) {
-		for (dec = -89; dec < 89; dec+=10) {
-			double el = ra_dec_to_elevation(ra, dec);
-			double az = ra_dec_to_azimuth(ra, dec);
-		
-			//if (el > 0 && az > 0) {	
-				double ra1;
-				double dec1;
-
-				ra1 = el_az_to_ra(el, az);
-				dec1 = el_az_to_dec(el, az);
-
-				printf("<%f %f> <%f %f> <%f %f>\n", ra, dec, az, el, ra1, dec1);
-			//}	
-		}
-	}
+	printf("ra1 %f, dec1 %f\n", ra1, dec1);
 }
 
 
