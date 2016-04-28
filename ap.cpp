@@ -123,11 +123,11 @@ int AP::Init()
     Send("r:Gt#");
 
     latitude = GetF();
-    printf("lat %f\n", latitude); 
+    if (trace) printf("lat %f\n", latitude); 
     
     Send("r:Gg#");
     longitude = GetF();
-    printf("long %f\n", longitude);
+    if (trace) printf("long %f\n", longitude);
     last_st = SiderialTime(); 
     return 0;
 }
