@@ -6,13 +6,11 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-
-void process(char *string)
-{
-	printf("got %s\n", string);
-}
+//----------------------------------------------------------------------------------------
 
 const char *socket_name = "/tmp/virtual_serial";
+
+//----------------------------------------------------------------------------------------
 
 int init_connection() {
 	ssize_t r;
@@ -39,6 +37,33 @@ int init_connection() {
 
 	return fd;
 }
+
+//----------------------------------------------------------------------------------------
+
+bool match(char *buf, const char *command) 
+{
+	if (strncmp(buf, command, strlen(command)) == 0)
+		return true;
+	return false;
+}
+
+
+
+void process(int fd, char *string)
+{
+        char    reply[1024];
+	
+	printf("got %s\n", string);
+        
+        if (match(string, ":V#")) {
+            strcpy(reply, "5.31#");
+            printf("sending reply %s\n", reply); 
+	    send(fd, reply, strlen(reply) + 1, 0);
+            return;
+        }
+}
+
+//----------------------------------------------------------------------------------------
 
 
 int main()
@@ -67,7 +92,7 @@ int main()
 			cur_cmd[cp] = buf[i];
 			cur_cmd[cp+1] = 0;
 			if (buf[i] == '#') {
-				process(cur_cmd);
+				process(fd, cur_cmd);
 				cp = 0;
 			}
 			else

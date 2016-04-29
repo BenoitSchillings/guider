@@ -71,13 +71,16 @@ endif
 #endif
 
 
-all:guide174 planet ap_server apstop
+all:guide174 planet ap_server vbox_to_ap apstop
 
 guide174:  AACoordinateTransformation.cpp  ser.cpp ap.cpp guide174.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
 	$(CC) -march=native -O3 guide174.cpp  AACoordinateTransformation.cpp util.cpp $(TINY) -o guide174 $(CFLAGS)  $(OPENCV) -lASICamera
 
 apstop:  AACoordinateTransformation.cpp  ap.cpp apstop.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
 	$(CC) -march=native -O3 apstop.cpp  AACoordinateTransformation.cpp util.cpp $(TINY) -o apstop $(CFLAGS)  $(OPENCV) -lASICamera
+
+vbox_to_ap:  AACoordinateTransformation.cpp  ap.cpp vbox_to_ap.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
+	$(CC) -march=native -O3 vbox_to_ap.cpp  AACoordinateTransformation.cpp util.cpp $(TINY) -o vbox_to_ap $(CFLAGS)  $(OPENCV)
 
 
 ap_server:  ap_server.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
@@ -99,7 +102,7 @@ planet: ser.cpp   AACoordinateTransformation.cpp  ap.cpp planet.cpp util.cpp ./t
 	$(CC)  -c ./tiny/tinyxmlerror.cpp -o ./tinyobj/tinyxmlerror.cpp.o $(CFLAGS)
 
 clean:
-	rm -f guide174 planet ap_server
+	rm -f vbox_to_ap guide174 planet ap_server
 #pkg-config libusb-1.0 --cflags --libs
 #pkg-config opencv --cflags --libs
 
