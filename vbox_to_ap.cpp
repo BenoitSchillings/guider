@@ -10,6 +10,11 @@
 
 const char *socket_name = "/tmp/virtual_serial";
 
+#include "ap.cpp"
+
+AP	*the_ap;
+
+
 //----------------------------------------------------------------------------------------
 
 int init_connection() {
@@ -73,6 +78,9 @@ int main()
 	fd = init_connection();
 	if (fd < 0)
 		return 1;
+
+	the_ap = new AP();
+	the_ap->Init();
 
 	//send(fd, buf, r, 0);
 
