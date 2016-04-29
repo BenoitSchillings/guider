@@ -192,8 +192,8 @@ void Planet::MinDev()
 
 	Planet::Planet()
 {
-	width = 3072; 
-	height = 2048;
+	width = 1072; 
+	height = 1048;
 	frame = 0;
 	background = 0;
 	dev = 100;
@@ -240,10 +240,10 @@ void Planet::InitCam(int cx, int cy, int width, int height)
     setValue(CONTROL_GAIN, 0, false);
     printf("max %d\n", getMax(CONTROL_BANDWIDTHOVERLOAD)); 
 
-    setValue(CONTROL_BANDWIDTHOVERLOAD, 80, false); //lowest transfer speed
+    setValue(CONTROL_BANDWIDTHOVERLOAD, 90, false); //lowest transfer speed
     setValue(CONTROL_EXPOSURE, 10*1000, false);
     setValue(CONTROL_HIGHSPEED, 1, false);
-    setStartPos(1000, 500);
+    setStartPos(1000, 800);
     printf("init done\n");
 }
 
@@ -284,7 +284,7 @@ bool Planet::GetFrame()
 	start = nanotime(); 
  	got_it = getImageData(image.ptr<uchar>(0), width * height * sizeof(PTYPE), -1);
  	end = nanotime();
-	printf("%f\n", end-start);	
+	//printf("%f\n", end-start);	
 
 	if (!got_it) {
 		printf("bad cam\n");
@@ -326,7 +326,7 @@ void ui_setup()
 {
         namedWindow("video", 1);
         createTrackbar("gain", "video", 0, 600, 0);
-        createTrackbar("exp", "video", 0, 1000, 0);
+        createTrackbar("exp", "video", 0, 200, 0);
         createTrackbar("mult", "video", 0, 100, 0);
         createTrackbar("Sub", "video", 0, 32500, 0);
         createTrackbar("scale", "video", 0, 100, 0);
@@ -378,7 +378,7 @@ int find_guide()
         float scale = cvGetTrackbarPos("scale", "video") / 100.0;
 	g_scale = scale;
 	
-	if (g->frame % 1 == 0) { 
+	if (g->frame % 10 == 0) { 
 		g->MinDev();	
         	resize(g->image, resized, Size(0, 0), scale, scale, INTER_AREA);
 		DrawVal(resized, "exp ", g->exp, 0, "sec");
@@ -388,7 +388,7 @@ int find_guide()
 	        resized = resized * (0.1 * cvGetTrackbarPos("mult", "video"));
                	resized = resized - (cvGetTrackbarPos("Sub", "video"));	
 		center(resized); 
-		cv::imshow("video_out",  resized);
+		cv::imshow("video",  resized);
         	char c = cvWaitKey(1);
         	hack_gain_upd(g);
         
