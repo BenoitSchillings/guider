@@ -321,7 +321,8 @@ int APServer::Reply()
         int n = read(fd, &c, 1);
         if (n > 0) {
             reply[idx] = c;
-            idx++;
+ 	    reply[idx + 1] = 0;            
+	    idx++;
         }	
     } while(c != '#' && total_time<100000000);
     if (trace) printf("%s\n", reply); 
@@ -379,7 +380,10 @@ int main()
 			ap->Send(command + 1);
 			ap->Reply();	
 		}
-
+		if (ap->trace) {
+			printf("server:: in command %s\n", command);
+			printf("server:: reply %s\n", ap->reply);
+		}	
 		zmq::message_t msg_reply(strlen(ap->reply) + 1);
         	memcpy (msg_reply.data (), ap->reply, strlen(ap->reply) + 1);
         	socket.send(msg_reply);

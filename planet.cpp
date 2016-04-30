@@ -192,8 +192,8 @@ void Planet::MinDev()
 
 	Planet::Planet()
 {
-	width = 1072; 
-	height = 1048;
+	width = 3000; 
+	height = 2048;
 	frame = 0;
 	background = 0;
 	dev = 100;
@@ -243,7 +243,7 @@ void Planet::InitCam(int cx, int cy, int width, int height)
     setValue(CONTROL_BANDWIDTHOVERLOAD, 90, false); //lowest transfer speed
     setValue(CONTROL_EXPOSURE, 10*1000, false);
     setValue(CONTROL_HIGHSPEED, 1, false);
-    setStartPos(1000, 800);
+    setStartPos(0,0);
     printf("init done\n");
 }
 
@@ -372,13 +372,13 @@ int find_guide()
 
 	src = (ushort*)g->image.ptr<uchar>(0);
 	
-	fwrite(src, 1, g->width*g->height*2, out);	
+	//fwrite(src, 1, g->width*g->height*2, out);	
 	cnt++;	
         
         float scale = cvGetTrackbarPos("scale", "video") / 100.0;
 	g_scale = scale;
 	
-	if (g->frame % 10 == 0) { 
+	if (g->frame % 1 == 0) { 
 		g->MinDev();	
         	resize(g->image, resized, Size(0, 0), scale, scale, INTER_AREA);
 		DrawVal(resized, "exp ", g->exp, 0, "sec");

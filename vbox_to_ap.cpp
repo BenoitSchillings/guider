@@ -52,23 +52,165 @@ bool match(char *buf, const char *command)
 	return false;
 }
 
+//----------------------------------------------------------------------------------------
+
+
+
+void cat_r(int fd, char *cmd)
+{
+	char	cmd_buf[1024];
+	char	reply[1024];
+
+        cmd_buf[0] = 'r'; cmd_buf[1] = 0;
+        strcat(cmd_buf, cmd);
+        the_ap->Send(cmd_buf);
+        send(fd, the_ap->reply, strlen(the_ap->reply) + 1, 0);
+        printf("reply %s\n", the_ap->reply);
+}
+
+//----------------------------------------------------------------------------------------
+
+
+void cat_c(int fd, char *cmd)
+{
+        char    cmd_buf[1024];
+        char    reply[1024];
+
+        cmd_buf[0] = 'c'; cmd_buf[1] = 0;
+        strcat(cmd_buf, cmd);
+        the_ap->Send(cmd_buf);
+        send(fd, the_ap->reply, strlen(the_ap->reply) + 1, 0);
+        printf("reply %s\n", the_ap->reply);
+}
+
+
+//----------------------------------------------------------------------------------------
+
+void cat_n(int fd, char *cmd)
+{
+        char    cmd_buf[1024];
+        char    reply[1024];
+
+        cmd_buf[0] = 's'; cmd_buf[1] = 0;
+        strcat(cmd_buf, cmd);
+        the_ap->Send(cmd_buf);
+}
+
+
+//----------------------------------------------------------------------------------------
 
 
 void process(int fd, char *string)
 {
         char    reply[1024];
+	char	cmd[1024];
 	
 	printf("got %s\n", string);
         
         if (match(string, ":V#")) {
-            strcpy(reply, "5.31#");
-            printf("sending reply %s\n", reply); 
-	    send(fd, reply, strlen(reply) + 1, 0);
-            return;
+	    cat_r(fd, string);
+	    return;
         }
+	if (match(string, ":Br")) {
+		cat_c(fd, string);
+		return;	
+	}
+        if (match(string, ":Bd")) {
+                cat_c(fd, string);
+                return;
+        }
+
+        if (match(string, ":GR#")) {
+                cat_r(fd, string);
+                return;
+        }
+
+        if (match(string, ":GD#")) {
+                cat_r(fd, string);
+                return;
+        }
+
+	if (match(string, ":GS#")) {
+                cat_r(fd, string);
+                return;
+        }
+
+        if (match(string, ":pS#")) {
+                cat_r(fd, string);
+                return;
+        }
+	
+	if (match(string, ":RC")) {
+		cat_n(fd, string);
+		return;
+	}
+
+        if (match(string, ":Q")) {
+                cat_n(fd, string);
+                return;
+        }
+        
+         if (match(string, ":Ms#")) {
+                cat_n(fd, string);
+                return;
+        }
+        
+        if (match(string, ":Me#")) {
+                cat_n(fd, string);
+                return;
+        }
+        
+        if (match(string, ":Mw#")) {
+                cat_n(fd, string);
+                return;
+        }
+        
+        if (match(string, ":Mn#")) {
+                cat_n(fd, string);
+                return;
+        }
+        
+        if (match(string, ":RD")) { 
+                cat_c(fd, string);
+                return;
+        }
+        
+	if (match(string, ":RR")) {
+                cat_c(fd, string);
+                return;
+        }
+ 
+          
+        if (match(string, ":RT")) {
+                cat_n(fd, string);
+                return;
+        }
+        
+        if (match(string, ":CM")) {
+	    cat_r(fd, string);
+	    return;
+        }
+        
+        if (match(string, ":Sr")) {
+	    cat_c(fd, string);
+	    return;
+        }
+
+        if (match(string, ":Sd")) {
+	    cat_c(fd, string);
+	    return;
+        }
+
+        if (match(string, ":MS#")) {
+                cat_c(fd, string);
+                return;
+        }
+ 
+
+	printf("*** missed %s\n", string);
 }
 
-//----------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------
 
 
 int main()
