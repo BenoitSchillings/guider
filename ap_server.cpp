@@ -196,7 +196,7 @@ void APServer::Log()
 		Stop();	
 		Done();
 		printf("emergency limit\n");
-		exit(-1); 	
+		//exit(-1); 	
 	}
 
 }
@@ -295,11 +295,9 @@ char APServer::GetCC()
 
     usleep(15000);
     do {
-        usleep(1000);
-        total_time += 1000;
-
+        total_time += 100000;
         n = read(fd, &c, 1);
-    } while(n == 0 && total_time<1000000);
+    } while(n == 0 && total_time<10000000);
     if (trace) printf("%c\n", c);
     return c;
 }
@@ -316,15 +314,14 @@ int APServer::Reply()
    
     usleep(15000); 
     do {
-        total_time += 200000;
-        //printf("reply wait\n"); 
+        total_time += 100000;
         int n = read(fd, &c, 1);
         if (n > 0) {
             reply[idx] = c;
  	    reply[idx + 1] = 0;            
 	    idx++;
         }	
-    } while(c != '#' && total_time<100000000);
+    } while(c != '#' && total_time< 10000000);
     if (trace) printf("%s\n", reply); 
     return idx;
 }
@@ -342,7 +339,7 @@ int main()
     zmq::socket_t socket (context, ZMQ_REP);
     socket.bind ("tcp://*:5555");
 
-    int timeout = 250;
+    int timeout = 20;
     socket.setsockopt (ZMQ_RCVTIMEO, &timeout, sizeof (int));
  
     ap = new APServer();
@@ -357,13 +354,14 @@ int main()
     } while(error != 0);
 
 
+    int check = 0;
+
      while(1) {
-        
+        check++; 
        	zmq::message_t request;
         int result = socket.recv (&request);
 	if (request.size() > 0) {
 		memcpy(command, request.data(), request.size());
-		printf("got request %s\n", command);
 
 		if (command[0] == 's') {	//silent command. not waiting for reply from the mount
 			ap->Send(command + 1);
@@ -388,7 +386,7 @@ int main()
         	memcpy (msg_reply.data (), ap->reply, strlen(ap->reply) + 1);
         	socket.send(msg_reply);
 	}
-	ap->Log();
+	if (check % 25 == 0) ap->Log();
     }
     
     return 0;

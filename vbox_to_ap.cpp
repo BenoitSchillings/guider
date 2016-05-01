@@ -65,7 +65,7 @@ void cat_r(int fd, char *cmd)
         strcat(cmd_buf, cmd);
         the_ap->Send(cmd_buf);
         send(fd, the_ap->reply, strlen(the_ap->reply) + 1, 0);
-        printf("reply %s\n", the_ap->reply);
+        //printf("reply %s\n", the_ap->reply);
 }
 
 //----------------------------------------------------------------------------------------
@@ -80,7 +80,7 @@ void cat_c(int fd, char *cmd)
         strcat(cmd_buf, cmd);
         the_ap->Send(cmd_buf);
         send(fd, the_ap->reply, strlen(the_ap->reply) + 1, 0);
-        printf("reply %s\n", the_ap->reply);
+        //printf("reply %s\n", the_ap->reply);
 }
 
 
@@ -105,7 +105,7 @@ void process(int fd, char *string)
         char    reply[1024];
 	char	cmd[1024];
 	
-	printf("got %s\n", string);
+	//printf("got %s\n", string);
         
         if (match(string, ":V#")) {
 	    cat_r(fd, string);
@@ -186,6 +186,27 @@ void process(int fd, char *string)
                 return;
         }
         
+        if (match(string, ":RG")) {
+                cat_n(fd, string);
+                return;
+        }
+
+         if (match(string, ":RC")) {
+                cat_n(fd, string);
+                return;
+        }
+
+        
+         if (match(string, ":RS")) {
+                cat_n(fd, string);
+                return;
+        }
+
+        if (match(string, ":Rs")) {
+                cat_n(fd, string);
+                return;
+        }
+
         if (match(string, ":CM")) {
 	    cat_r(fd, string);
 	    return;

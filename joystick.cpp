@@ -7,6 +7,8 @@
 #include <string.h>
 
 #include "joystick.h"
+#include "ap.cpp"
+
 
 static int joystick_fd = -1;
 
@@ -89,10 +91,17 @@ int main(int argc, char *argv[])
 	int fd, rc;
 	int done = 0;
 	int x, y;
+	int x0, y0;	
+	AP  *ap;
+
+        ap = new AP();
+        ap->Init();
 
 
 	x = 0;
 	y = 0;
+	x0 = 0;
+	y0 = 0;
 
 	struct js_event jse;
 
@@ -112,7 +121,13 @@ int main(int argc, char *argv[])
 			//printf("Event: time %8u, value %8hd, type: %3u, axis/button: %u\n", 
 				//jse.time, jse.value, jse.type, jse.number);
 		}
-		printf("%d %d\n", x, y);	
+		if (x != x0 || y != y0) {
+			printf("%d %d\n", x, y);	
+			x0 = x;y0 = y;	
+			float fx = x/32000.0;
+			float fy = y/32000.0;
+			ap->SetRate(-10.0*fx, -10.0*fy);	
+		}	
 	}
 }
 #endif

@@ -235,8 +235,8 @@ void Guider::MinDev()
 
 	Guider::Guider()
 {
-	width = 2048; 
-	height = 2048;
+	width = 1024; 
+	height = 768;
 	frame = 0;
 	background = 0;
 	dev = 100;
@@ -365,12 +365,12 @@ void Guider::InitCam(int cx, int cy, int width, int height)
     initCamera(); //this must be called before camera operation. and it only need init once
     printf("resolution %d %d\n", getMaxWidth(), getMaxHeight()); 
 
-    setImageFormat(width, height, 1, IMG_RAW16);
+    setImageFormat(width, height, 2, IMG_RAW16);
     setValue(CONTROL_BRIGHTNESS, 100, false);
     setValue(CONTROL_GAIN, 0, false);
     printf("max %d\n", getMax(CONTROL_BANDWIDTHOVERLOAD)); 
 
-    //setValue(CONTROL_BANDWIDTHOVERLOAD, 76, false); //lowest transfer speed
+    setValue(CONTROL_BANDWIDTHOVERLOAD, 76, false); //lowest transfer speed
     setValue(CONTROL_EXPOSURE, 10, false);
     //setValue(CONTROL_HIGHSPEED, 1, false);
     setStartPos(0, 0);
@@ -547,7 +547,7 @@ int find_guide()
 	g->GetFrame();
 	//fwrite(g->image.ptr<uchar>(0), 1, g->width*g->height*2, out);	
 	cnt++;	
-	if (g->frame % 20 == 0) { 
+	if (g->frame % 1 == 0) { 
 		g->MinDev();	
 		center(g->image);	
         	DrawVal(g->image, "exp ", g->exp, 0, "sec");
@@ -842,14 +842,14 @@ void help(char **argv)
                 printf("%s -h        print this help\n", argv[0]);
                 printf("%s -f        full field find star\n", argv[0]);
                 printf("%s -g        acquire guide star and guide\n", argv[0]);
-               	printf("%s -c        calibrate mount\n", argv[0]); 
+               	printf("%s -cal      calibrate mount\n", argv[0]); 
 	        printf("%s -t        test guide logic\n", argv[0]);
 		printf("exta args\n");
                 printf("-gain=value\n");
                 printf("-exp=value (in sec)\n");
                 printf("-mult=value\n");
 		printf("complex example\n");
-		printf("./guider -exp=0.5 -gain=300 -mult=4 -c\n");
+		printf("./guider -exp=0.5 -gain=300 -mult=4 -cal\n");
 }
 
 //--------------------------------------------------------------------------------------
@@ -883,22 +883,22 @@ int main(int argc, char **argv)
 	//ap->SetDec(dec);
 	
 	//ap->Goto();
-	ap->Stop();	
-	ap->Done();	
+	//ap->Stop();	
+	//ap->Done();	
 	int i = 0;
 	
-	while(1) {
-		i++;	
-		ap->Log();
-		if (i%50 == 1) {
+	//while(1) {
+		//i++;	
+		//ap->Log();
+		//if (i%50 == 1) {
 			//ap->Bump(0.0, 0.5);
-		}	
-	}	
+		//}	
+	//}	
 	//ap->SetRA(23.5);
 	//ap->SetDec(44.51);
 	
 	//ap->Init();
-	ap->Done();
+	//ap->Done();
 	//ap->LongFormat();	
 	//ap->Siderial();
 

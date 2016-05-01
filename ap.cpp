@@ -518,13 +518,13 @@ this means to slow down RA by 15arcsec/sec * 0.0448 = 0.072 arcsec/sec
 
 int AP::SetRate(double ra, double dec)
 {
-	ra = ra - 1.0;
+	ra = ra;
 	dec = dec;
 
 	char	buf[256];
 	char	sign;
 
-	if (ra > 0) {
+	if (ra >= 0) {
 		sign = '+';
 	}
 	else {

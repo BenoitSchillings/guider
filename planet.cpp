@@ -132,6 +132,7 @@ void DrawVal(Mat img, const char* title, float value, int y, const char *units)
 }
 
 //--------------------------------------------------------------------------------------
+int bin = 2;
 
 
 class Planet {
@@ -192,8 +193,8 @@ void Planet::MinDev()
 
 	Planet::Planet()
 {
-	width = 3000; 
-	height = 2048;
+	width = 3000/bin; 
+	height = 2048/bin;
 	frame = 0;
 	background = 0;
 	dev = 100;
@@ -233,9 +234,15 @@ void Planet::InitCam(int cx, int cy, int width, int height)
     
     
     initCamera(); //this must be called before camera operation. and it only need init once
+    
+    int mw = getMaxWidth();
+    int mh = getMaxHeight();
+
+    int dx = (mw - width) / 2;
+    int dy = (mh - height)/ 2;
     printf("resolution %d %d\n", getMaxWidth(), getMaxHeight()); 
 
-    setImageFormat(width, height, 1, IMG_RAW16);
+    setImageFormat(width, height, bin, IMG_RAW16);
     setValue(CONTROL_BRIGHTNESS, 100, false);
     setValue(CONTROL_GAIN, 0, false);
     printf("max %d\n", getMax(CONTROL_BANDWIDTHOVERLOAD)); 
@@ -243,7 +250,7 @@ void Planet::InitCam(int cx, int cy, int width, int height)
     setValue(CONTROL_BANDWIDTHOVERLOAD, 90, false); //lowest transfer speed
     setValue(CONTROL_EXPOSURE, 10*1000, false);
     setValue(CONTROL_HIGHSPEED, 1, false);
-    setStartPos(0,0);
+    if (bin == 1) setStartPos(dx, dy);
     printf("init done\n");
 }
 
@@ -326,7 +333,7 @@ void ui_setup()
 {
         namedWindow("video", 1);
         createTrackbar("gain", "video", 0, 600, 0);
-        createTrackbar("exp", "video", 0, 200, 0);
+        createTrackbar("exp", "video", 0, 999, 0);
         createTrackbar("mult", "video", 0, 100, 0);
         createTrackbar("Sub", "video", 0, 32500, 0);
         createTrackbar("scale", "video", 0, 100, 0);
@@ -357,7 +364,7 @@ int find_guide()
 
     char buf[512];
 	
-    sprintf(buf, "/media/benoit/18A6395AA6393A18/video/out%ld.ser", time(0));
+    sprintf(buf, "/media/benoit/18A6395AA6393A18/video/n4565_%ld.ser", time(0));
     out = fopen(buf, "wb"); 
     write_header(out, g->width, g->height, 1000);
     int cnt = 0;
@@ -372,7 +379,7 @@ int find_guide()
 
 	src = (ushort*)g->image.ptr<uchar>(0);
 	
-	//fwrite(src, 1, g->width*g->height*2, out);	
+	fwrite(src, 1, g->width*g->height*2, out);	
 	cnt++;	
         
         float scale = cvGetTrackbarPos("scale", "video") / 100.0;
@@ -392,7 +399,7 @@ int find_guide()
         	char c = cvWaitKey(1);
         	hack_gain_upd(g);
         
-		if (c == 27) {
+		if (g->frame == 3000 || c == 27) {
             		fseek(out, 0, SEEK_SET);
 			write_header(out, g->width, g->height, cnt);	
 			stopCapture();
