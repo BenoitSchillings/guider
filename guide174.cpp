@@ -235,8 +235,8 @@ void Guider::MinDev()
 
 	Guider::Guider()
 {
-	width = 1024; 
-	height = 768;
+	width = 768; 
+	height = 600;
 	frame = 0;
 	background = 0;
 	dev = 100;
@@ -332,7 +332,7 @@ bool Guider::FindGuideStar()
 		ref_y = -1;
 		return false;	
 	}
-
+	printf("max %ld\n", max);
 	return true;
 }
 

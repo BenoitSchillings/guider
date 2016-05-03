@@ -126,7 +126,8 @@ int main(int argc, char *argv[])
 			x0 = x;y0 = y;	
 			float fx = x/32000.0;
 			float fy = y/32000.0;
-			ap->SetRate(-10.0*fx, -10.0*fy);	
+			ap->SetRate(-8.0*fx, -8.0*fy);	
+			printf("%f %f\n", -90.0*fx, -90.0*fy);	
 		}	
 	}
 }

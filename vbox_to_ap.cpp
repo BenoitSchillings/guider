@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
+
 //----------------------------------------------------------------------------------------
 
 const char *socket_name = "/tmp/virtual_serial";
@@ -14,6 +15,18 @@ const char *socket_name = "/tmp/virtual_serial";
 
 AP	*the_ap;
 
+void cls()
+{
+    	printf( "%c[2J", 27);
+}
+
+
+void gotoxy(int x, int y)
+{
+	printf("%c[%d;%df",0x1B,y,x);
+        //printf( "%c[2J", 0x1b);
+
+}
 
 //----------------------------------------------------------------------------------------
 
@@ -65,7 +78,7 @@ void cat_r(int fd, char *cmd)
         strcat(cmd_buf, cmd);
         the_ap->Send(cmd_buf);
         send(fd, the_ap->reply, strlen(the_ap->reply) + 1, 0);
-        //printf("reply %s\n", the_ap->reply);
+        //gotoxy(1, 10);printf("reply %s\n", the_ap->reply);
 }
 
 //----------------------------------------------------------------------------------------
@@ -80,7 +93,7 @@ void cat_c(int fd, char *cmd)
         strcat(cmd_buf, cmd);
         the_ap->Send(cmd_buf);
         send(fd, the_ap->reply, strlen(the_ap->reply) + 1, 0);
-        //printf("reply %s\n", the_ap->reply);
+        //gotoxy(1, 10);printf("reply %s              \n", the_ap->reply);
 }
 
 
@@ -105,7 +118,7 @@ void process(int fd, char *string)
         char    reply[1024];
 	char	cmd[1024];
 	
-	//printf("got %s\n", string);
+	/*gotoxy(1, 9);*/printf("got %s             \n", string);
         
         if (match(string, ":V#")) {
 	    cat_r(fd, string);
@@ -238,7 +251,8 @@ int main()
 {
 	int	fd;
 
-	fd = init_connection();
+        //cls();
+        fd = init_connection();
 	if (fd < 0)
 		return 1;
 

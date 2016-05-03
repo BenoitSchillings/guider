@@ -364,7 +364,7 @@ int find_guide()
 
     char buf[512];
 	
-    sprintf(buf, "/media/benoit/18A6395AA6393A18/video/n4565_%ld.ser", time(0));
+    sprintf(buf, "/media/benoit/18A6395AA6393A18/video/bias_%ld.ser", time(0));
     out = fopen(buf, "wb"); 
     write_header(out, g->width, g->height, 1000);
     int cnt = 0;
@@ -399,7 +399,7 @@ int find_guide()
         	char c = cvWaitKey(1);
         	hack_gain_upd(g);
         
-		if (g->frame == 3000 || c == 27) {
+		if (g->frame == 5000 || c == 27) {
             		fseek(out, 0, SEEK_SET);
 			write_header(out, g->width, g->height, cnt);	
 			stopCapture();

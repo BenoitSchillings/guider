@@ -192,7 +192,7 @@ void APServer::Log()
 
 	printf("stime = %f\taz = %f\t el = %f\t ra = %f\t dec = %f\n", last_st, last_az, last_el, last_ra, last_dec);
 	
-	if (last_dec < -20 || last_dec > 70 || last_el < 20.0 || last_az > 195) {
+	if (last_dec < -20 || last_dec > 70 || last_el < 20.0 || last_az > 200) {
 		Stop();	
 		Done();
 		printf("emergency limit\n");
@@ -328,6 +328,19 @@ int APServer::Reply()
 
 //----------------------------------------------------------------------------------------
 
+void cls()
+{
+        printf( "%c[2J", 27);
+}
+
+
+void gotoxy(int x, int y)
+{
+        printf("%c[%d;%df",0x1B,y,x);
+	printf( "%c[2J", 0x1b);
+}
+
+
 
 
 int main()
@@ -355,6 +368,7 @@ int main()
 
 
     int check = 0;
+    //cls();
 
      while(1) {
         check++; 
@@ -379,14 +393,14 @@ int main()
 			ap->Reply();	
 		}
 		if (ap->trace) {
-			printf("server:: in command %s\n", command);
-			printf("server:: reply %s\n", ap->reply);
+			gotoxy(1, 5);printf("server:: in command %s\n", command);
+			gotoxy(1, 6);printf("server:: reply %s\n", ap->reply);
 		}	
 		zmq::message_t msg_reply(strlen(ap->reply) + 1);
         	memcpy (msg_reply.data (), ap->reply, strlen(ap->reply) + 1);
         	socket.send(msg_reply);
 	}
-	if (check % 25 == 0) ap->Log();
+	if (check % 25 == 0) {/*gotoxy(1, 1),*/ ap->Log();/*gotoxy(1, 5);*/}
     }
     
     return 0;
