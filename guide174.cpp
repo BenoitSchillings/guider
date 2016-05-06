@@ -653,6 +653,11 @@ int graphic_test()
 
 int guide()
 {
+        float   sum_x;
+        float   sum_y;
+        int     frame_per_correction = 1;
+        int     frame_count;
+        
 	Guider *g = new Guider();
 
 	ui_setup();
@@ -664,6 +669,10 @@ int guide()
 	Mat zoom;
 	
 
+        frame_count = 0;
+        sum_x = 0;
+        sum_y = 0;
+        
 	while(1) {
 		g->GetFrame();
 		if (!g->HasGuideStar()) {
@@ -681,17 +690,27 @@ int guide()
 			float total_v;
 	
 			g->Centroid(&cx, &cy, &total_v);
+                        
 			if (total_v > 0) {
 //actual correction
 				float dx = cx-g->ref_x;	
 				float dy = cy-g->ref_y;
-
-				float tx = g->error_to_tx(dx, dy);
-				float ty = g->error_to_ty(dx,dy);	
-				printf("Move %f %f\n", tx, ty);	
-				//ty = 0;	
-				g->Move(-tx, -ty);	
-				//g->Move(0.0, 0.04);	
+                                sum_x += dx;
+                                sum_y += dy;
+                                frame_count++;
+                                
+                                if (frame_count == frame_per_correction) {
+                                    sum_x = sum_x / frame_per_correction;
+                                    sum_y = sum_y / frame_per_correction;
+                                    
+                                    float tx = g->error_to_tx(sum_x, sum_y);
+                                    float ty = g->error_to_ty(sum_x, sum_y);
+                                    sum_x = 0;
+                                    sum_y = 0;
+                                    frame_count = 0;
+                                    printf("Move %f %f\n", tx, ty);	
+                                    g->Move(-tx, -ty);
+                                }
 			}
 			float mult = 0.1 * cvGetTrackbarPos("mult", "video");	
 			blit(mult * g->GuideCrop(), uibm, 0, 0, 1000, 1000, 150, 150);	
