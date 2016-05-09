@@ -1,0 +1,90 @@
+<DataSet>
+    <DataFile>
+        <FileType>dat</FileType>
+        <FirstCell></FirstCell>
+        <LastCell></LastCell>
+        <SheetNumber>1</SheetNumber>
+        <LagsNumber>0</LagsNumber>
+        <StepsAhead>0</StepsAhead>
+        <ColumnsName>0</ColumnsName>
+        <RowsLabel>0</RowsLabel>
+        <Separator>Space</Separator>
+        <MissingValuesLabel>?</MissingValuesLabel>
+        <DataFileName>./data/mapping.dat</DataFileName>
+    </DataFile>
+    <Variables>
+        <VariablesNumber>4</VariablesNumber>
+        <Item Index="1">
+            <Name>az</Name>
+            <Units></Units>
+            <Description></Description>
+            <Use>Input</Use>
+        </Item>
+        <Item Index="2">
+            <Name>alt</Name>
+            <Units></Units>
+            <Description></Description>
+            <Use>Input</Use>
+        </Item>
+        <Item Index="3">
+            <Name>d_az</Name>
+            <Units></Units>
+            <Description></Description>
+            <Use>Target</Use>
+        </Item>
+        <Item Index="4">
+            <Name>d_alt</Name>
+            <Units></Units>
+            <Description></Description>
+            <Use>Target</Use>
+        </Item>
+    </Variables>
+    <Instances>
+        <InstancesNumber>13</InstancesNumber>
+        <Item Index="1">
+            <Use>Testing</Use>
+        </Item>
+        <Item Index="2">
+            <Use>Testing</Use>
+        </Item>
+        <Item Index="3">
+            <Use>Testing</Use>
+        </Item>
+        <Item Index="4">
+            <Use>Testing</Use>
+        </Item>
+        <Item Index="5">
+            <Use>Testing</Use>
+        </Item>
+        <Item Index="6">
+            <Use>Testing</Use>
+        </Item>
+        <Item Index="7">
+            <Use>Testing</Use>
+        </Item>
+        <Item Index="8">
+            <Use>Testing</Use>
+        </Item>
+        <Item Index="9">
+            <Use>Testing</Use>
+        </Item>
+        <Item Index="10">
+            <Use>Testing</Use>
+        </Item>
+        <Item Index="11">
+            <Use>Testing</Use>
+        </Item>
+        <Item Index="12">
+            <Use>Testing</Use>
+        </Item>
+        <Item Index="13">
+            <Use>Testing</Use>
+        </Item>
+    </Instances>
+    <MissingValues>
+        <InstancesNumber>13</InstancesNumber>
+        <VariablesNumber>4</VariablesNumber>
+        <ScrubbingMethod>Unuse</ScrubbingMethod>
+        <MissingValuesNumber>0</MissingValuesNumber>
+    </MissingValues>
+</DataSet>

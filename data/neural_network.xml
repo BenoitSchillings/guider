@@ -1,0 +1,65 @@
+<NeuralNetwork>
+    <Inputs>
+        <InputsNumber>2</InputsNumber>
+        <Item Index="1">
+            <Name>az</Name>
+            <Units></Units>
+            <Description></Description>
+        </Item>
+        <Item Index="2">
+            <Name>alt</Name>
+            <Units></Units>
+            <Description></Description>
+        </Item>
+    </Inputs>
+    <ScalingLayer>
+        <ScalingNeuronsNumber>2</ScalingNeuronsNumber>
+        <Statistics Index="1">
+            <Minimum>0.428898</Minimum>
+            <Maximum>0.476716</Maximum>
+            <Mean>0.453505</Mean>
+            <StandardDeviation>0.0153434</StandardDeviation>
+        </Statistics>
+        <Statistics Index="2">
+            <Minimum>0.0659784</Minimum>
+            <Maximum>0.328135</Maximum>
+            <Mean>0.22191</Mean>
+            <StandardDeviation>0.0782145</StandardDeviation>
+        </Statistics>
+        <ScalingMethod>MinimumMaximum</ScalingMethod>
+    </ScalingLayer>
+    <MultilayerPerceptron>
+        <Architecture>2 6 6 2</Architecture>
+        <LayersActivationFunction>HyperbolicTangent HyperbolicTangent Linear</LayersActivationFunction>
+        <Parameters>-6.79882 -3.887 -9.69349 -1.23199 2.37203 0.755919 -6.00593 1.05108 -0.981396 0.150219 -0.404132 -0.522403 -0.82661 -0.533112 -1.1211 0.928169 1.76284 -1.25097 0.279377 -3.00665 -0.239984 1.75516 -2.16582 2.65623 -0.30478 -4.10667 6.01977 -2.72156 2.37799 -12.6183 2.40574 13.5518 5.24475 -8.21102 -1.64924 -4.58741 -1.06215 -3.45867 -0.320315 -2.83547 0.997874 0.247763 1.64909 0.352554 2.19903 0.208542 1.45778 -7.53703 0.269883 -0.708305 0.71013 -1.83179 3.22631 -3.17431 3.65648 0.666657 4.48536 1.10254 3.95811 2.19418 1.67407 4.45925 1.91706 0.315787 -2.75265 -4.4026 -3.47581 3.77654 5.76121 5.01721 2.44805 -3.36507 -6.51477 -4.14323</Parameters>
+    </MultilayerPerceptron>
+    <UnscalingLayer>
+        <UnscalingNeuronsNumber>2</UnscalingNeuronsNumber>
+        <Statistics Index="1">
+            <Minimum>-0.000135185</Minimum>
+            <Maximum>0.00017581</Maximum>
+            <Mean>-1.60255e-07</Mean>
+            <StandardDeviation>8.78267e-05</StandardDeviation>
+        </Statistics>
+        <Statistics Index="2">
+            <Minimum>-0.00280216</Minimum>
+            <Maximum>0.00909876</Maximum>
+            <Mean>0.00305154</Mean>
+            <StandardDeviation>0.00361867</StandardDeviation>
+        </Statistics>
+        <UnscalingMethod>MinimumMaximum</UnscalingMethod>
+    </UnscalingLayer>
+    <Outputs>
+        <OutputsNumber>2</OutputsNumber>
+        <Item Index="1">
+            <Name>d_az</Name>
+            <Units></Units>
+            <Description></Description>
+        </Item>
+        <Item Index="2">
+            <Name>d_alt</Name>
+            <Units></Units>
+            <Description></Description>
+        </Item>
+    </Outputs>
+</NeuralNetwork>
