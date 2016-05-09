@@ -2,10 +2,7 @@ ver = release
 platform = x64 
 
 CC = g++
-#INCLIB = /usr/local/include
-#LDLIB = /usr/local/lib
 TINY = ./tinyobj/tinyxmlerror.cpp.o ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o
-#OPENCV = $(shell pkg-config --cflags opencv) $(shell pkg-config --libs opencv)
 OPENCV0 = -I/usr/local/include/opencv -I/usr/local/include -L/usr/local/lib -lopencv_calib3d -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_highgui -lopencv_imgproc -lopencv_ml -lopencv_objdetect -lopencv_photo -lopencv_stitching -lopencv_superres -lopencv_ts -lopencv_video -lopencv_videostab -L/usr/local/lib -lzmq 
 OPENCV = -I/usr/local/include/opencv  -lopencv_calib3d -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_highgui -lopencv_imgproc -lopencv_ml -lopencv_objdetect -lopencv_photo -lopencv_stitching -lopencv_superres -lopencv_ts -lopencv_video -lopencv_videostab  -lzmq 
 
@@ -48,28 +45,6 @@ CFLAGS += -m64
 CFLAGS += -lrt
 endif
 
-ifeq ($(platform), armv5)
-CC = arm-none-linux-gnueabi-g++
-AR= arm-nonelinux-gnueabi-ar
-CFLAGS += -march=armv5
-CFLAGS += -lrt
-endif
-
-
-ifeq ($(platform), armv6)
-CC = arm-bcm2708hardfp-linux-gnueabi-g++
-AR= arm-bcm2708hardfp-linux-gnueabi-ar
-CFLAGS += -march=armv6
-CFLAGS += -lrt
-endif
-
-#ifeq ($(platform), armhf)
-#CC = arm-linux-gnueabihf-g++
-#AR= arm-linux-gnueabihf-ar
-#CFLAGS += -march=armv5
-#LDLIB += -lrt
-#endif
-
 
 all:guide174 planet ap_server vbox_to_ap apstop joystick nn
 
@@ -94,7 +69,7 @@ planet: ser.cpp   AACoordinateTransformation.cpp  ap.cpp planet.cpp util.cpp ./t
 	$(CC) -march=native -O3 planet.cpp   AACoordinateTransformation.cpp   util.cpp $(TINY) -o planet $(CFLAGS)  $(OPENCV) -lASICamera
 
 nn: nn.cpp
-	g++ -Wno-deprecated-declarations -std=gnu++11 nn.cpp ./lib/libopennn.a ./lib/libtinyxml2.a
+	g++ -Wno-deprecated-declarations -std=gnu++11 nn.cpp ./lib/libopennn.a ./lib/libtinyxml2.a -o nn
 	
 ./tinyobj/tinystr.cpp.o: ./tiny/tinystr.cpp
 	$(CC)  -c ./tiny/tinystr.cpp -o ./tinyobj/tinystr.cpp.o $(CFLAGS)
