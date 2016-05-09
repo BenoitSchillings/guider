@@ -71,7 +71,7 @@ endif
 #endif
 
 
-all:guide174 planet ap_server vbox_to_ap apstop joystick
+all:guide174 planet ap_server vbox_to_ap apstop joystick nn
 
 guide174:  AACoordinateTransformation.cpp  ser.cpp ap.cpp guide174.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
 	$(CC) -march=native -O3 guide174.cpp  AACoordinateTransformation.cpp util.cpp $(TINY) -o guide174 $(CFLAGS)  $(OPENCV) -lASICamera
@@ -93,6 +93,9 @@ ap_server:  ap_server.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlpars
 planet: ser.cpp   AACoordinateTransformation.cpp  ap.cpp planet.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
 	$(CC) -march=native -O3 planet.cpp   AACoordinateTransformation.cpp   util.cpp $(TINY) -o planet $(CFLAGS)  $(OPENCV) -lASICamera
 
+nn: nn.cpp
+	g++ -Wno-deprecated-declarations -std=gnu++11 nn.cpp ./lib/libopennn.a ./lib/libtinyxml2.a
+	
 ./tinyobj/tinystr.cpp.o: ./tiny/tinystr.cpp
 	$(CC)  -c ./tiny/tinystr.cpp -o ./tinyobj/tinystr.cpp.o $(CFLAGS)
 
