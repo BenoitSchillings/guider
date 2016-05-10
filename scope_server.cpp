@@ -10,11 +10,11 @@
 
 //----------------------------------------------------------------------------------------
 
-class APServer {
+class ScopeServer {
 public:;
     
-	APServer();
-    	~APServer();
+	ScopeServer();
+    	~ScopeServer();
     
 	int	Init();
     	int	Send(const char*);
@@ -110,7 +110,7 @@ void set_blocking (int fd, int should_block)
 const char *portname = "/dev/ttyUSB0";
 const char *portname1= "/dev/ttyUSB0";
 
-int APServer::Init()
+int ScopeServer::Init()
 {
     short_format = 0;
 
@@ -142,19 +142,19 @@ int APServer::Init()
 //----------------------------------------------------------------------------------------
 
 
-APServer::APServer()
+ScopeServer::ScopeServer()
 {
 }
 
 //----------------------------------------------------------------------------------------
 
-APServer::~APServer()
+ScopeServer::~ScopeServer()
 {
 }
 
 //----------------------------------------------------------------------------------------
 
-int APServer::Send(const char *cmd)
+int ScopeServer::Send(const char *cmd)
 {
    	if (trace) printf("cmd %s\n", cmd); 
 	return write(fd, cmd, strlen(cmd));
@@ -164,7 +164,7 @@ int APServer::Send(const char *cmd)
 //----------------------------------------------------------------------------------------
 
 
-void APServer::Stop()
+void ScopeServer::Stop()
 {
 	Send(":Q#");
 }
@@ -172,7 +172,7 @@ void APServer::Stop()
 //----------------------------------------------------------------------------------------
 
 
-void APServer::Done()
+void ScopeServer::Done()
 {
 	Send(":RT9#");
 }
@@ -180,7 +180,7 @@ void APServer::Done()
 //----------------------------------------------------------------------------------------
 
 
-void APServer::Log()
+void ScopeServer::Log()
 {
 
 	
@@ -203,7 +203,7 @@ void APServer::Log()
 
 //----------------------------------------------------------------------------------------
 
-double APServer::GetF()
+double ScopeServer::GetF()
 {
 	Reply();
 	int	a,b,c;
@@ -221,7 +221,7 @@ double APServer::GetF()
 
 //----------------------------------------------------------------------------------------
 
-double APServer::GetF_RA()
+double ScopeServer::GetF_RA()
 {
         Reply();
         int     hh, mm;
@@ -237,7 +237,7 @@ double APServer::GetF_RA()
 
 //----------------------------------------------------------------------------------------
 
-double APServer::Dec()
+double ScopeServer::Dec()
 {	
 	Send(":GD#");
 	return(GetF());
@@ -245,7 +245,7 @@ double APServer::Dec()
 
 //----------------------------------------------------------------------------------------
 
-double APServer::RA()
+double ScopeServer::RA()
 {
         Send(":GR#");
         return(GetF_RA());
@@ -253,7 +253,7 @@ double APServer::RA()
 
 //----------------------------------------------------------------------------------------
 
-double APServer::LocalTime()
+double ScopeServer::LocalTime()
 {
         Send(":GL#");
         return GetF_RA();
@@ -262,7 +262,7 @@ double APServer::LocalTime()
 
 //----------------------------------------------------------------------------------------
 
-double APServer::SiderialTime()
+double ScopeServer::SiderialTime()
 {
 	Send(":GS#");
 	return GetF_RA();
@@ -270,7 +270,7 @@ double APServer::SiderialTime()
 
 //----------------------------------------------------------------------------------------
 
-double APServer::Azimuth()
+double ScopeServer::Azimuth()
 {
         Send(":GZ#");
         return(GetF());
@@ -279,7 +279,7 @@ double APServer::Azimuth()
 
 //----------------------------------------------------------------------------------------
 
-double APServer::Elevation()
+double ScopeServer::Elevation()
 {	
 	Send(":GA#");
 	return(GetF());
@@ -287,7 +287,7 @@ double APServer::Elevation()
 
 //----------------------------------------------------------------------------------------
 
-char APServer::GetCC()
+char ScopeServer::GetCC()
 {
     long        total_time = 0;
     char        c;
@@ -305,7 +305,7 @@ char APServer::GetCC()
 
 //----------------------------------------------------------------------------------------
 
-int APServer::Reply()
+int ScopeServer::Reply()
 {
     reply[0] = 0;
     int	idx = 0;
@@ -345,7 +345,7 @@ void gotoxy(int x, int y)
 
 int main()
 {
-    APServer  *ap;
+    ScopeServer  *scope;
     char      command[1024];
  
     zmq::context_t context (1);
@@ -355,12 +355,12 @@ int main()
     int timeout = 20;
     socket.setsockopt (ZMQ_RCVTIMEO, &timeout, sizeof (int));
  
-    ap = new APServer();
+    scope = new ScopeServer();
   
     int error = 0;
  
     do { 
-	error = ap->Init();
+	error = scope->Init();
 	if (error != 0) {
 		usleep(1000*1000);		//sleep for 1 second 
 	}
@@ -377,29 +377,29 @@ int main()
 		memcpy(command, request.data(), request.size());
 
 		if (command[0] == 's') {	//silent command. not waiting for reply from the mount
-			ap->Send(command + 1);
-			ap->reply[0] = 0;
+			scope->Send(command + 1);
+			scope->reply[0] = 0;
 		}
 
 		if (command[0] == 'c') {
-			ap->Send(command + 1);
-			ap->reply[0] = ap->GetCC();	
-			ap->reply[1] = 0;
+			scope->Send(command + 1);
+			scope->reply[0] = scope->GetCC();	
+			scope->reply[1] = 0;
 		}
 
 		if (command[0] == 'r') {
-			ap->Send(command + 1);
-			ap->Reply();	
+			scope->Send(command + 1);
+			scope->Reply();	
 		}
-		if (ap->trace) {
+		if (scope->trace) {
 			gotoxy(1, 5);printf("server:: in command %s\n", command);
-			gotoxy(1, 6);printf("server:: reply %s\n", ap->reply);
+			gotoxy(1, 6);printf("server:: reply %s\n", scope->reply);
 		}	
-		zmq::message_t msg_reply(strlen(ap->reply) + 1);
-        	memcpy (msg_reply.data (), ap->reply, strlen(ap->reply) + 1);
+		zmq::message_t msg_reply(strlen(scope->reply) + 1);
+        	memcpy (msg_reply.data (), scope->reply, strlen(scope->reply) + 1);
         	socket.send(msg_reply);
 	}
-	if (check % 25 == 0) {/*gotoxy(1, 1),*/ ap->Log();/*gotoxy(1, 5);*/}
+	if (check % 25 == 0) {/*gotoxy(1, 1),*/ scope->Log();/*gotoxy(1, 5);*/}
     }
     
     return 0;
