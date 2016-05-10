@@ -46,13 +46,13 @@ CFLAGS += -lrt
 endif
 
 
-all:guide174 planet scope_server vbox_to_ap apstop joystick nn
+all:guide174 planet scope_server vbox_to_ap scopestop joystick nn
 
 guide174:  AACoordinateTransformation.cpp  ser.cpp scope.cpp guide174.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
 	$(CC) -march=native -O3 guide174.cpp  AACoordinateTransformation.cpp util.cpp $(TINY) -o guide174 $(CFLAGS)  $(OPENCV) -lASICamera
 
-apstop:  AACoordinateTransformation.cpp  scope.cpp apstop.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
-	$(CC) -march=native -O3 apstop.cpp  AACoordinateTransformation.cpp util.cpp $(TINY) -o apstop $(CFLAGS)  $(OPENCV)
+scopestop:  AACoordinateTransformation.cpp  scope.cpp scopestop.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
+	$(CC) -march=native -O3 scopestop.cpp  AACoordinateTransformation.cpp util.cpp $(TINY) -o scopestop $(CFLAGS)  $(OPENCV)
 
 joystick:  AACoordinateTransformation.cpp  scope.cpp joystick.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
 	$(CC) -march=native -O3 joystick.cpp  AACoordinateTransformation.cpp util.cpp $(TINY) -o joystick $(CFLAGS)  $(OPENCV)
