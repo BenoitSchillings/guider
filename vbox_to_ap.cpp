@@ -11,9 +11,9 @@
 
 const char *socket_name = "/tmp/virtual_serial";
 
-#include "ap.cpp"
+#include "scope.cpp"
 
-AP	*the_ap;
+Scope	*the_scope;
 
 void cls()
 {
@@ -76,9 +76,9 @@ void cat_r(int fd, char *cmd)
 
         cmd_buf[0] = 'r'; cmd_buf[1] = 0;
         strcat(cmd_buf, cmd);
-        the_ap->Send(cmd_buf);
-        send(fd, the_ap->reply, strlen(the_ap->reply) + 1, 0);
-        //gotoxy(1, 10);printf("reply %s\n", the_ap->reply);
+        the_scope->Send(cmd_buf);
+        send(fd, the_scope->reply, strlen(the_scope->reply) + 1, 0);
+        //gotoxy(1, 10);printf("reply %s\n", the_scope->reply);
 }
 
 //----------------------------------------------------------------------------------------
@@ -91,9 +91,9 @@ void cat_c(int fd, char *cmd)
 
         cmd_buf[0] = 'c'; cmd_buf[1] = 0;
         strcat(cmd_buf, cmd);
-        the_ap->Send(cmd_buf);
-        send(fd, the_ap->reply, strlen(the_ap->reply) + 1, 0);
-        //gotoxy(1, 10);printf("reply %s              \n", the_ap->reply);
+        the_scope->Send(cmd_buf);
+        send(fd, the_scope->reply, strlen(the_scope->reply) + 1, 0);
+        //gotoxy(1, 10);printf("reply %s              \n", the_scope->reply);
 }
 
 
@@ -106,7 +106,7 @@ void cat_n(int fd, char *cmd)
 
         cmd_buf[0] = 's'; cmd_buf[1] = 0;
         strcat(cmd_buf, cmd);
-        the_ap->Send(cmd_buf);
+        the_scope->Send(cmd_buf);
 }
 
 
@@ -256,8 +256,8 @@ int main()
 	if (fd < 0)
 		return 1;
 
-	the_ap = new AP();
-	the_ap->Init();
+	the_scope = new Scope();
+	the_scope->Init();
 
 	//send(fd, buf, r, 0);
 

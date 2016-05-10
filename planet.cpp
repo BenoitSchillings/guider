@@ -10,9 +10,9 @@
 bool sim = false;
 
 #include "ser.cpp"
-#include "ap.cpp"
+#include "scope.cpp"
 
-AP *ap;
+Scope *scope;
 
 #include <sys/time.h>
 
@@ -372,7 +372,6 @@ int find_guide()
     Mat resized;
  
     while(1) {
-        //ap->Log(); 
 	g->GetFrame();
 
 	ushort *src;

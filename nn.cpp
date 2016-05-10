@@ -44,8 +44,8 @@ int main(void)
       int i = 0;
 
       architecture[i++] = 2;
-      architecture[i++] = 6;
-      architecture[i++] = 6;
+      architecture[i++] = 4;
+      architecture[i++] = 4;
       architecture[i++] = 2;
 
       NeuralNetwork neural_network;
@@ -78,7 +78,7 @@ int main(void)
 
       QuasiNewtonMethod* quasi_Newton_method_pointer = training_strategy.get_quasi_Newton_method_pointer();
 
-      quasi_Newton_method_pointer->set_minimum_performance_increase(1.0e-5);
+      quasi_Newton_method_pointer->set_minimum_performance_increase(1.0e-6);
 
       TrainingStrategy::Results training_strategy_results = training_strategy.perform_training();
 
@@ -104,11 +104,11 @@ int main(void)
       inputs[0] = 0.428898;
       inputs[1] = 0.08097; 
       
-      for (int i =0; i < 10; i++) {
+      for (int i =0; i < 200; i++) {
       	Vector<double> outputs = neural_network.calculate_outputs(inputs);
       	printf("%f %f\n", outputs[0], outputs[1]); 
      	inputs[1] += 0.003; 
-        inputs[0] += 0.002; 
+        //inputs[0] += 0.002; 
       }
  
       return(0);

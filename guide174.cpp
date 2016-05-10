@@ -12,9 +12,9 @@
 bool sim = false;
 
 #include "ser.cpp"
-#include "ap.cpp"
+#include "scope.cpp"
 
-AP *ap;
+Scope *scope;
 //--------------------------------------------------------------------------------------
 
 float get_value(const char *name);
@@ -256,8 +256,8 @@ void Guider::MinDev()
         mount_dx2 = get_value("mount_dx2");
         mount_dy1 = get_value("mount_dy1");
         mount_dy2 = get_value("mount_dy2");
-	gain_x = 1.0;
-	gain_y = 1.0;
+	gain_x = 1.2;
+	gain_y = 1.2;
 }
 
 //--------------------------------------------------------------------------------------
@@ -268,7 +268,7 @@ void	Guider::Move(float dx, float dy)
     dx *= gain_x;
     dy *= gain_y;
 
-    ap->Bump(dx, dy);
+    scope->Bump(dx, dy);
     return;
  
     if (fabs(dx) < 0.02) {
@@ -456,7 +456,6 @@ bool Guider::GetFrame()
 	bool got_it;
        	int total = 0; 
 	
-	//getImageAfterExp
         got_it = getImageData(image.ptr<uchar>(0), width * height * sizeof(PTYPE), -1);
 	
 
@@ -533,19 +532,10 @@ int find_guide()
     
     startCapture();
    
-    FILE *out;
-
-    char buf[512];
-	
-    sprintf(buf, "/media/benoit/18A6395AA6393A18/video/out%ld.ser", time(0));
-    out = fopen(buf, "wb"); 
-    write_header(out, g->height, g->width, 1000);
     int cnt = 0;
  
     while(1) {
-        //ap->Log(); 
 	g->GetFrame();
-	//fwrite(g->image.ptr<uchar>(0), 1, g->width*g->height*2, out);	
 	cnt++;	
 	if (g->frame % 1 == 0) { 
 		g->MinDev();	
@@ -561,8 +551,6 @@ int find_guide()
         	hack_gain_upd(g);
         
 		if (c == 27) {
-            		fseek(out, 0, SEEK_SET);
-			write_header(out, g->height, g->width, cnt);	
 			stopCapture();
             		closeCamera(); 
 	    		return 0; 
@@ -573,46 +561,6 @@ int find_guide()
 
 //--------------------------------------------------------------------------------------
 
-int sum_guide()
-{
-    Guider *g;
-
-    g = new Guider();
-
-    ui_setup();
-    hack_gain_upd(g);
-
-    startCapture();
-
-
-    while(1) {
-        g->GetFrame();
-        g->MinDev();
-        g->image = g->image - g->background;
-        g->image = g->image * (0.1 * cvGetTrackbarPos("mult", "video"));
-        DrawVal(g->image, "exp ", g->exp, 0, "sec");
-        DrawVal(g->image, "gain", g->gain, 1, "");
-        DrawVal(g->image, "frame", g->frame*1.0, 2, "");
-
-        if (g->frame % 1 == 0) {
-               	g->temp_image = 0.97 * g->temp_image +  0.03 * g->image; 
-		//g->temp_image = g->temp_image * 0.5;
-	
-		cv::imshow("video", g->temp_image);
-                char c = cvWaitKey(1);
-                hack_gain_upd(g);
-
-                if (c == 27) {
-                        stopCapture();
-                        closeCamera();
-                        return 0;
-                }
-        }
-    }
-}
-
-
-//--------------------------------------------------------------------------------------
 
 int graphic_test()
 {
@@ -768,13 +716,13 @@ int calibrate()
     {
 	for (int i = 0;i < 4; i++) g->GetFrame();
 	g->FindGuideStar();
-        ap->Log();
+        scope->Log();
 	x1 = g->ref_x;
 	y1 = g->ref_y;
 	printf("v1 %f %f\n", x1, y1);
 
 	for (int i =0; i < 4; i++) g->Move(0.9, 0);
-        ap->Log(); 
+        scope->Log(); 
 	cv::imshow("video", g->image);
  
 	char c = cvWaitKey(1);
@@ -787,7 +735,7 @@ int calibrate()
 	printf("v2 %f %f\n", x2, y2);
 
 	for (int i =0; i < 4; i++) g->Move(0.0, 0.9);
-	ap->Log(); 
+	scope->Log(); 
         cv::imshow("video", g->image);
 	c = cvWaitKey(1);
 
@@ -801,7 +749,7 @@ int calibrate()
 	c = cvWaitKey(1);
            
 	for (int i =0; i < 4; i++) g->Move(-0.9, -0.9);
-	ap->Log();	
+	scope->Log();	
         stopCapture();
    	closeCamera(); 
     }
@@ -886,40 +834,18 @@ int main(int argc, char **argv)
 {
 	signal(SIGINT, intHandler);
 
-    	ap = new AP();
-	ap->Init();
-	ap->LongFormat();	
-	ap->Siderial();	
+    	scope = new Scope();
+	scope->Init();
+	scope->LongFormat();	
+	scope->Siderial();	
 	
-	float ra = ap->RA();
-	float dec = ap->Dec();	
+	float ra = scope->RA();
+	float dec = scope->Dec();	
 	dec -= 1;	
 	printf("RA is %f\n", ra);
 	printf("DEC is %f\n", dec);	
 	ra -= 0.01;
 	dec = 20.0;	
-	//ap->SetRA(ra);	
-	//ap->SetDec(dec);
-	
-	//ap->Goto();
-	//ap->Stop();	
-	//ap->Done();	
-	int i = 0;
-	
-	//while(1) {
-		//i++;	
-		//ap->Log();
-		//if (i%50 == 1) {
-			//ap->Bump(0.0, 0.5);
-		//}	
-	//}	
-	//ap->SetRA(23.5);
-	//ap->SetDec(44.51);
-	
-	//ap->Init();
-	//ap->Done();
-	//ap->LongFormat();	
-	//ap->Siderial();
 
         if (argc == 1 || strcmp(argv[1], "-h") == 0) {
                	help(argv);
@@ -946,8 +872,6 @@ int main(int argc, char **argv)
         while(pos < argc) {
                	if (match(argv[pos], "-t")) test_guide(); 
 		if (match(argv[pos], "-f")) find_guide();
-                if (match(argv[pos], "-s")) sum_guide();
- 
 		if (match(argv[pos], "-guide")) guide(); 
 		if (match(argv[pos], "-cal")) calibrate();	
 		pos++;

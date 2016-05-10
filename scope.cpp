@@ -20,11 +20,11 @@ inline double tr(double degrees) {
 
 //----------------------------------------------------------------------------------------
 
-class AP {
+class Scope {
 public:;
     
-	AP();
-    	~AP();
+	Scope();
+    	~Scope();
     
 	int	Init();
     	int	Send(const char*);
@@ -79,7 +79,7 @@ private:
 
 //----------------------------------------------------------------------------------------
 
-int AP::Send(const char *cmd)
+int Scope::Send(const char *cmd)
 {
 	int	len = strlen(cmd) + 1;
 	
@@ -104,7 +104,7 @@ int AP::Send(const char *cmd)
 //----------------------------------------------------------------------------------------
 
 
-int AP::Init()
+int Scope::Init()
 {
     ctx = new zmq::context_t(1);
     socket = new zmq::socket_t(*ctx, ZMQ_REQ);
@@ -135,19 +135,19 @@ int AP::Init()
 //----------------------------------------------------------------------------------------
 
 
-AP::AP()
+Scope::Scope()
 {
 }
 
 //----------------------------------------------------------------------------------------
 
-AP::~AP()
+Scope::~Scope()
 {
 }
 
 //----------------------------------------------------------------------------------------
 
-void AP::Bump(double dx, double dy)
+void Scope::Bump(double dx, double dy)
 {
 	
     int min_move = 0;
@@ -179,7 +179,7 @@ void AP::Bump(double dx, double dy)
 //----------------------------------------------------------------------------------------
 
 
-void AP::Stop()
+void Scope::Stop()
 {
 	Send("s:Q#");
 }
@@ -187,7 +187,7 @@ void AP::Stop()
 //----------------------------------------------------------------------------------------
 
 
-void AP::Done()
+void Scope::Done()
 {
 	Send("s:RT9#");
 }
@@ -195,14 +195,14 @@ void AP::Done()
 //----------------------------------------------------------------------------------------
 
 
-void AP::Siderial()
+void Scope::Siderial()
 {
         Send("s:RT2#");
 }
 
 //----------------------------------------------------------------------------------------
 
-void AP::LongFormat()
+void Scope::LongFormat()
 {
 	Send("s:U#");
 }
@@ -210,7 +210,7 @@ void AP::LongFormat()
 //----------------------------------------------------------------------------------------
 
 
-double	AP::ra_dec_to_elevation(double ra, double dec)
+double	Scope::ra_dec_to_elevation(double ra, double dec)
 {
 
         double ha = last_st - ra;
@@ -227,7 +227,7 @@ double	AP::ra_dec_to_elevation(double ra, double dec)
 
 //----------------------------------------------------------------------------------------
 
-double	AP::ra_dec_to_azimuth(double ra, double dec)
+double	Scope::ra_dec_to_azimuth(double ra, double dec)
 {
        double ha = last_st - ra;
 
@@ -243,7 +243,7 @@ double	AP::ra_dec_to_azimuth(double ra, double dec)
 
 //----------------------------------------------------------------------------------------
 
-double	AP::el_az_to_dec(double elevation, double azimuth)
+double	Scope::el_az_to_dec(double elevation, double azimuth)
 {
         CAACoordinateTransformation     tr;
         CAA2DCoordinate c;
@@ -257,7 +257,7 @@ double	AP::el_az_to_dec(double elevation, double azimuth)
 
 //----------------------------------------------------------------------------------------
 
-double	AP::el_az_to_ra(double elevation, double azimuth)
+double	Scope::el_az_to_ra(double elevation, double azimuth)
 {
        	CAACoordinateTransformation     tr;
        	CAA2DCoordinate c;
@@ -274,7 +274,7 @@ double	AP::el_az_to_ra(double elevation, double azimuth)
 //----------------------------------------------------------------------------------------
 
 
-void AP::Log()
+void Scope::Log()
 {
 	last_az = Azimuth();
 	last_el = Elevation();
@@ -304,7 +304,7 @@ void AP::Log()
 
 //----------------------------------------------------------------------------------------
 
-void  AP::test_conversions()
+void  Scope::test_conversions()
 {
 	double	ra;
 	double	dec;
@@ -328,7 +328,7 @@ void  AP::test_conversions()
 
 //----------------------------------------------------------------------------------------
 
-double AP::GetF()
+double Scope::GetF()
 {
 	int	a,b,c;
 	
@@ -345,7 +345,7 @@ double AP::GetF()
 
 //----------------------------------------------------------------------------------------
 
-double AP::GetF_RA()
+double Scope::GetF_RA()
 {
         int     hh, mm;
 	float	ss;
@@ -360,7 +360,7 @@ double AP::GetF_RA()
 
 //----------------------------------------------------------------------------------------
 
-double AP::Dec()
+double Scope::Dec()
 {	
 	Send("r:GD#");
 	return(GetF());
@@ -368,7 +368,7 @@ double AP::Dec()
 
 //----------------------------------------------------------------------------------------
 
-double AP::RA()
+double Scope::RA()
 {
         Send("r:GR#");
         return(GetF_RA());
@@ -376,7 +376,7 @@ double AP::RA()
 
 //----------------------------------------------------------------------------------------
 
-double AP::LocalTime()
+double Scope::LocalTime()
 {
         Send("r:GL#");
         return GetF_RA();
@@ -385,7 +385,7 @@ double AP::LocalTime()
 
 //----------------------------------------------------------------------------------------
 
-double AP::SiderialTime()
+double Scope::SiderialTime()
 {
 	Send("r:GS#");
 	return GetF_RA();
@@ -393,7 +393,7 @@ double AP::SiderialTime()
 
 //----------------------------------------------------------------------------------------
 
-double AP::Azimuth()
+double Scope::Azimuth()
 {
         Send("r:GZ#");
         return(GetF());
@@ -402,7 +402,7 @@ double AP::Azimuth()
 
 //----------------------------------------------------------------------------------------
 
-double AP::Elevation()
+double Scope::Elevation()
 {	
 	Send("r:GA#");
 	return(GetF());
@@ -420,7 +420,7 @@ Defines the commanded Declination, DEC. Command may be issued in long or short f
 
 //----------------------------------------------------------------------------------------
 
-int AP::SetRA(double ra)
+int Scope::SetRA(double ra)
 {
 	char	buf[256];
 	int	hour;
@@ -452,7 +452,7 @@ int AP::SetRA(double ra)
 
 //----------------------------------------------------------------------------------------
 
-int AP::SetDec(double dec)
+int Scope::SetDec(double dec)
 {
         char    buf[256];
         int     d;
@@ -490,7 +490,7 @@ int AP::SetDec(double dec)
 
 //----------------------------------------------------------------------------------------
 
-int AP::Goto()
+int Scope::Goto()
 {
 	if (dec_set == NOT_SET) {
 		printf("no dec defined\n");
@@ -516,7 +516,7 @@ this means to slow down RA by 15arcsec/sec * 0.0448 = 0.072 arcsec/sec
 
 //Set Rate of 1.0, 0.0 is the normal for RA/DEC
 
-int AP::SetRate(double ra, double dec)
+int Scope::SetRate(double ra, double dec)
 {
 	ra = ra;
 	dec = dec;
@@ -549,7 +549,7 @@ int AP::SetRate(double ra, double dec)
 
 //----------------------------------------------------------------------------------------
 
-int AP::GetCC()
+int Scope::GetCC()
 {
     long        total_time = 0;
     char        c;
@@ -562,7 +562,7 @@ int AP::GetCC()
 
 //----------------------------------------------------------------------------------------
 
-int AP::Reply()
+int Scope::Reply()
 {
     if (trace) printf("%s\n", reply); 
     return strlen(reply);

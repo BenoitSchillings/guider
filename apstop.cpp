@@ -10,16 +10,16 @@
 
 bool sim = false;
 
-#include "ap.cpp"
+#include "scope.cpp"
 
-AP *ap;
+Scope *scope;
 
 
 int main(int argc, char **argv)
 {
-    	ap = new AP();
-	ap->Init();
-	ap->Stop();	
-	ap->Done();
+    	scope = new Scope();
+	scope->Init();
+	scope->Stop();	
+	scope->Done();
 }
 	

@@ -368,7 +368,6 @@ int main()
 
 
     int check = 0;
-    //cls();
 
      while(1) {
         check++; 

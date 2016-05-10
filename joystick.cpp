@@ -7,7 +7,7 @@
 #include <string.h>
 
 #include "joystick.h"
-#include "ap.cpp"
+#include "scope.cpp"
 
 
 static int joystick_fd = -1;
@@ -88,14 +88,14 @@ int get_joystick_status(struct wwvi_js_event *wjse)
 /* a little test program */
 int main(int argc, char *argv[])
 {
-	int fd, rc;
-	int done = 0;
-	int x, y;
-	int x0, y0;	
-	AP  *ap;
+	int 	fd, rc;
+	int 	done = 0;
+	int 	x, y;
+	int 	x0, y0;	
+	Scope  	*scope;
 
-        ap = new AP();
-        ap->Init();
+        scope = new Scope();
+        scope->Init();
 
 
 	x = 0;
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 			x0 = x;y0 = y;	
 			float fx = x/32000.0;
 			float fy = y/32000.0;
-			ap->SetRate(-8.0*fx, -8.0*fy);	
+			scope->SetRate(-8.0*fx, -8.0*fy);	
 			printf("%f %f\n", -90.0*fx, -90.0*fy);	
 		}	
 	}
