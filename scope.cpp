@@ -52,7 +52,8 @@ public:;
 	double	el_az_to_ra(double elevation, double azimuth);
 
 	void	test_conversions();
-	
+
+	int	XCommand(const char *cmd);	
 	int	Goto();	
 	int 	fd;
     	char 	reply[512]; 
@@ -76,6 +77,19 @@ private:
 	double	latitude;
 	double	longitude;
 };
+
+//----------------------------------------------------------------------------------------
+
+int Scope::XCommand(const char* cmd)
+{
+	Send(cmd);
+	
+	int result;
+	
+	result = atoi(reply);
+	printf("result is %d\n", result);
+	return result;
+}
 
 //----------------------------------------------------------------------------------------
 

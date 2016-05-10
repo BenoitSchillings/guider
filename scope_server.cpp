@@ -31,6 +31,9 @@ public:;
 	double	Azimuth(); 
   	double	SiderialTime();	
 	double	LocalTime();	
+        
+        
+        int	HandleXCommands(const char *);
 
 	int 	fd;
     	char 	reply[512]; 
@@ -40,6 +43,8 @@ public:;
 private:
     	double	GetF();
 	double	GetF_RA();
+
+	int	dither_request;
 };
 
 //----------------------------------------------------------------------------------------
@@ -113,7 +118,7 @@ const char *portname1= "/dev/ttyUSB0";
 int ScopeServer::Init()
 {
     short_format = 0;
-
+    dither_request = 0;
     trace = 0; 
     
     fd = open (portname, O_RDWR | O_NOCTTY | O_SYNC);
@@ -150,6 +155,30 @@ ScopeServer::ScopeServer()
 
 ScopeServer::~ScopeServer()
 {
+}
+
+
+//----------------------------------------------------------------------------------------
+
+
+int ScopeServer::HandleXCommands(const char * s)
+{
+    printf("got x command %s\n", s);
+
+    if (strcmp(s, "dither") == 0) {
+  	int tmp = dither_request;
+	
+	dither_request = 0; 
+	return tmp; 
+    }
+
+	
+    if (strcmp(s, "reqdither") == 0) {
+	dither_request = 1;
+	return 0;
+    }	
+    
+    return 1234;
 }
 
 //----------------------------------------------------------------------------------------
@@ -333,6 +362,8 @@ void cls()
         printf( "%c[2J", 27);
 }
 
+//----------------------------------------------------------------------------------------
+
 
 void gotoxy(int x, int y)
 {
@@ -341,6 +372,7 @@ void gotoxy(int x, int y)
 }
 
 
+//----------------------------------------------------------------------------------------
 
 
 int main()
@@ -375,6 +407,10 @@ int main()
         int result = socket.recv (&request);
 	if (request.size() > 0) {
 		memcpy(command, request.data(), request.size());
+		if (command[0] == 'x') {
+			int result = scope->HandleXCommands(command + 1);
+			sprintf(scope->reply, "%d", result);	
+		}
 
 		if (command[0] == 's') {	//silent command. not waiting for reply from the mount
 			scope->Send(command + 1);

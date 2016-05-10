@@ -46,9 +46,7 @@ float exp0 = -1;
 
 void Wait(float t)
 {
-	printf("wait\n");	
 	usleep(t * 1000000.0);
-	printf("wait done\n");
 }
 
 void blit(Mat from, Mat to, int x1, int y1, int w, int h, int dest_x, int dest_y)
@@ -228,7 +226,7 @@ void Guider::MinDev()
 	sum = sum / count;
 	sum /= 2.0;	
 	dev = sqrt(sum);
-	printf("t = %d bg = %f, dev = %f\n", time(0) % 60, background, dev);
+	printf("t = %ld bg = %f, dev = %f\n", time(0) % 60, background, dev);
 }
 
 //--------------------------------------------------------------------------------------
@@ -374,7 +372,6 @@ void Guider::InitCam(int cx, int cy, int width, int height)
     setValue(CONTROL_EXPOSURE, 10, false);
     //setValue(CONTROL_HIGHSPEED, 1, false);
     setStartPos(0, 0);
-    printf("init done\n");
 }
 
 //--------------------------------------------------------------------------------------
@@ -385,7 +382,7 @@ void Guider::Centroid(float*cx, float*cy, float*total_v)
    float cnt;
 
    MinDev();
-   printf("%f %f\n", background, dev);
+   //printf("%f %f\n", background, dev);
 
    cnt = 0.0;
 
@@ -396,7 +393,7 @@ void Guider::Centroid(float*cx, float*cy, float*total_v)
    } 
    bias /= cnt;
    bias += dev * 3;
-   printf("%f\n", bias); 
+   //printf("%f\n", bias); 
     
    int vx, vy;
    float sum_x = 0;
@@ -420,7 +417,7 @@ void Guider::Centroid(float*cx, float*cy, float*total_v)
     sum_y = sum_y / total;
     *cx = sum_x;
     *cy = sum_y;
-    printf("%f %d\n", total, pcnt); 
+    //printf("%f %d\n", total, pcnt); 
     *total_v = total;
 }
 
@@ -605,7 +602,9 @@ int guide()
         float   sum_y;
         int     frame_per_correction = 1;
         int     frame_count;
-        
+       	int	drizzle_dx = 0;
+	int	drizzle_dy = 0;
+ 
 	Guider *g = new Guider();
 
 	ui_setup();
@@ -640,9 +639,8 @@ int guide()
 			g->Centroid(&cx, &cy, &total_v);
                         
 			if (total_v > 0) {
-//actual correction
-				float dx = cx-g->ref_x;	
-				float dy = cy-g->ref_y;
+				float dx = cx-g->ref_x + drizzle_dx;	
+				float dy = cy-g->ref_y + drizzle_dy;
                                 sum_x += dx;
                                 sum_y += dy;
                                 frame_count++;
@@ -660,6 +658,12 @@ int guide()
                                     g->Move(-tx, -ty);
                                 }
 			}
+			
+			if (scope->XCommand("xdither") == 1) {
+				drizzle_dx = rand()%8 - 4;
+				drizzle_dy = rand()%8 - 4;	
+			}
+
 			float mult = 0.1 * cvGetTrackbarPos("mult", "video");	
 			blit(mult * g->GuideCrop(), uibm, 0, 0, 1000, 1000, 150, 150);	
 			DrawVal(uibm, "tot ", total_v, 2, "adu");	
