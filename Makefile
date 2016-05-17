@@ -70,7 +70,10 @@ planet: ser.cpp   AACoordinateTransformation.cpp  scope.cpp planet.cpp util.cpp 
 
 nn: nn.cpp
 	g++ -Wno-deprecated-declarations -std=gnu++11 nn.cpp ./lib/libopennn.a ./lib/libtinyxml2.a -o nn
-	
+
+nn1: nn1.cpp
+	g++ -Wno-deprecated-declarations -std=gnu++11 nn1.cpp ./lib/libopennn.a ./lib/libtinyxml2.a -o nn1
+
 ./tinyobj/tinystr.cpp.o: ./tiny/tinystr.cpp
 	$(CC)  -c ./tiny/tinystr.cpp -o ./tinyobj/tinystr.cpp.o $(CFLAGS)
 

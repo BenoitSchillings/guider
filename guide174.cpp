@@ -254,8 +254,8 @@ void Guider::MinDev()
         mount_dx2 = get_value("mount_dx2");
         mount_dy1 = get_value("mount_dy1");
         mount_dy2 = get_value("mount_dy2");
-	gain_x = 1.2;
-	gain_y = 1.2;
+	gain_x = 0.9;
+	gain_y = 0.9;
 }
 
 //--------------------------------------------------------------------------------------
@@ -654,7 +654,7 @@ int guide()
                                     sum_x = 0;
                                     sum_y = 0;
                                     frame_count = 0;
-                                    printf("Move %f %f\n", tx, ty);	
+                                    //printf("Move %f %f\n", tx, ty);	
                                     g->Move(-tx, -ty);
                                 }
 			}
@@ -842,7 +842,9 @@ int main(int argc, char **argv)
 	scope->Init();
 	scope->LongFormat();	
 	scope->Siderial();	
-	
+	scope->XCommand("xfocus-5");
+	scope->XCommand("xfocus7");
+
 	float ra = scope->RA();
 	float dec = scope->Dec();	
 	dec -= 1;	

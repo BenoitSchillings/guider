@@ -47,6 +47,7 @@ float  g_gain = 150.0;
 float  g_mult = 2.0;
 float  g_exp = 0.1;
 float  g_scale = 0.5;
+float  g_crop = 0.25;
 
 float gain0 = -1;
 float exp0 = -1;
@@ -132,7 +133,7 @@ void DrawVal(Mat img, const char* title, float value, int y, const char *units)
 }
 
 //--------------------------------------------------------------------------------------
-int bin = 2;
+int bin = 1;
 
 
 class Planet {
@@ -193,8 +194,13 @@ void Planet::MinDev()
 
 	Planet::Planet()
 {
-	width = 3000/bin; 
+	width = 3096/bin; 
 	height = 2048/bin;
+	width *= g_crop;
+	height *= g_crop; 
+  	width &= 0xffff0;
+	height &= 0xffff0;	
+	printf("%d %d\n", width, height);	
 	frame = 0;
 	background = 0;
 	dev = 100;
@@ -336,7 +342,7 @@ void ui_setup()
         createTrackbar("exp", "video", 0, 999, 0);
         createTrackbar("mult", "video", 0, 100, 0);
         createTrackbar("Sub", "video", 0, 32500, 0);
-        createTrackbar("scale", "video", 0, 100, 0);
+        createTrackbar("scale", "video", 0, 200, 0);
         
 	setTrackbarPos("gain", "video", g_gain);
         setTrackbarPos("exp", "video", 1000.0 * g_exp);
@@ -398,7 +404,7 @@ int find_guide()
         	char c = cvWaitKey(1);
         	hack_gain_upd(g);
         
-		if (g->frame == 5000 || c == 27) {
+		if (g->frame == 15000 || c == 27) {
             		fseek(out, 0, SEEK_SET);
 			write_header(out, g->width, g->height, cnt);	
 			stopCapture();
@@ -426,7 +432,8 @@ void help(char **argv)
                 printf("%s -f        full field find star\n", argv[0]);
 		printf("exta args\n");
                 printf("-gain=value\n");
-                printf("-exp=value (in sec)\n");
+               	printf("-crop=value (0-1.0)\n"); 
+		printf("-exp=value (in sec)\n");
                 printf("-mult=value\n");
 		printf("complex example\n");
 		printf("./planet -exp=0.5 -gain=300 -mult=4 -f\n");
@@ -458,10 +465,13 @@ int main(int argc, char **argv)
 	g_gain = get_value("gain");
 	g_mult = get_value("mult");
  	g_scale = get_value("scale");	
+	g_crop = get_value("crop");	
 	while(pos < argc) {
 		if (match(argv[pos], "-gain=")) {sscanf(strchr(argv[pos], '=') , "=%f",  &g_gain); argv[pos][0] = 0;}
         	if (match(argv[pos], "-exp="))  {sscanf(strchr(argv[pos], '=') , "=%f",  &g_exp); argv[pos][0] = 0;}
         	if (match(argv[pos], "-mult=")) {sscanf(strchr(argv[pos], '=') , "=%f",  &g_mult); argv[pos][0] = 0;}
+	        if (match(argv[pos], "-crop=")) {sscanf(strchr(argv[pos], '=') , "=%f",  &g_crop); argv[pos][0] = 0;}
+	
 		pos++;
 	}
         pos = 1;
@@ -478,4 +488,5 @@ int main(int argc, char **argv)
        set_value("gain", g_gain);
        set_value("mult", g_mult);
        set_value("scale", g_scale);
+       set_value("crop", g_crop);
 }

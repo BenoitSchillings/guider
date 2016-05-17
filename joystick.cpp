@@ -126,7 +126,8 @@ int main(int argc, char *argv[])
 			x0 = x;y0 = y;	
 			float fx = x/32000.0;
 			float fy = y/32000.0;
-			scope->SetRate(-8.0*fx, -8.0*fy);	
+			
+			scope->SetRate(-3.0*fx, -3.0*fy);	
 			printf("%f %f\n", -90.0*fx, -90.0*fy);	
 		}	
 	}

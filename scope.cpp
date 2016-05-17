@@ -87,7 +87,7 @@ int Scope::XCommand(const char* cmd)
 	int result;
 	
 	result = atoi(reply);
-	printf("result is %d\n", result);
+	//printf("result is %d\n", result);
 	return result;
 }
 

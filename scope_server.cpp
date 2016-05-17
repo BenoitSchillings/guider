@@ -177,7 +177,13 @@ int ScopeServer::HandleXCommands(const char * s)
 	dither_request = 1;
 	return 0;
     }	
-    
+   
+    if (strncmp(s, "focus", 5) == 0) {
+	int move;	
+	sscanf(s, "focus%d", &move);
+	printf("move focus %d\n", move);
+    }
+
     return 1234;
 }
 
