@@ -106,6 +106,11 @@ void center(Mat img)
 	cx /= 2.0;
 	cy /= 2.0;	
         rectangle(img, Point(cx-10, cy-10), Point(cx+10, cy+10), Scalar(9000, 9000, 9000), 1, 8);
+        rectangle(img, Point(cx-13, cy-13), Point(cx+13, cy+13), Scalar(9000, 9000, 9000), 1, 8);
+        rectangle(img, Point(cx-12, cy-12), Point(cx+12, cy+12), Scalar(9000, 9000, 9000), 1, 8);
+        rectangle(img, Point(cx-11, cy-11), Point(cx+11, cy+11), Scalar(9000, 9000, 9000), 1, 8);
+
+
 }
 
 void DrawVal(Mat img, const char* title, float value, int y, const char *units)
@@ -384,7 +389,7 @@ int find_guide()
 
 	src = (ushort*)g->image.ptr<uchar>(0);
 	
-	fwrite(src, 1, g->width*g->height*2, out);	
+	//fwrite(src, 1, g->width*g->height*2, out);	
 	cnt++;	
         
         float scale = cvGetTrackbarPos("scale", "video") / 100.0;
@@ -392,7 +397,8 @@ int find_guide()
 	
 	if (g->frame % 1 == 0) { 
 		g->MinDev();	
-        	resize(g->image, resized, Size(0, 0), scale, scale, INTER_AREA);
+        	center(g->image);	
+		resize(g->image, resized, Size(0, 0), scale, scale, INTER_AREA);
 		DrawVal(resized, "exp ", g->exp, 0, "sec");
         	DrawVal(resized, "gain", g->gain, 1, "");
         	DrawVal(resized, "frame", g->frame*1.0, 2, "");
@@ -404,7 +410,7 @@ int find_guide()
         	char c = cvWaitKey(1);
         	hack_gain_upd(g);
         
-		if (g->frame == 15000 || c == 27) {
+		if (g->frame == 25000 || c == 27) {
             		fseek(out, 0, SEEK_SET);
 			write_header(out, g->width, g->height, cnt);	
 			stopCapture();

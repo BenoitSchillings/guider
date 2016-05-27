@@ -16,19 +16,15 @@ int main(void)
       srand( (unsigned)time( NULL ) );
       DataSet data_set;
 
-      data_set.set_data_file_name("./data/mapping.dat");
+      data_set.set_data_file_name("./data.dat");
 
       data_set.load_data();
 
       Variables* variables_pointer = data_set.get_variables_pointer();
 
       variables_pointer->set_use(0, Variables::Input);
-      variables_pointer->set_use(2, Variables::Target);
+      variables_pointer->set_use(5, Variables::Target);
 
-      variables_pointer->set_name(0, "az");
-      variables_pointer->set_name(1, "alt");
-      variables_pointer->set_name(2, "d_az");
-      variables_pointer->set_name(3, "d_alt");
 
       Matrix<std::string> inputs_information = variables_pointer->arrange_inputs_information();
       Matrix<std::string> targets_information = variables_pointer->arrange_targets_information();
@@ -43,10 +39,10 @@ int main(void)
       Vector<size_t> architecture(4);
       int i = 0;
 
-      architecture[i++] = 2;
+      architecture[i++] = 5;
       architecture[i++] = 4;
       architecture[i++] = 4;
-      architecture[i++] = 2;
+      architecture[i++] = 5;
 
       NeuralNetwork neural_network;
       neural_network.set(architecture);

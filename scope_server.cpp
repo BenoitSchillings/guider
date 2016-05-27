@@ -36,7 +36,9 @@ public:;
         int	HandleXCommands(const char *);
 
 	int 	fd;
-    	char 	reply[512]; 
+    	int	focus_fd;
+	
+	char 	reply[512]; 
     	char	buf[512];
 	char	short_format;
 	char	trace;
@@ -114,6 +116,7 @@ void set_blocking (int fd, int should_block)
 
 const char *portname = "/dev/ttyUSB0";
 const char *portname1= "/dev/ttyUSB0";
+const char *focusport="/dev/ttyACM0";
 
 int ScopeServer::Init()
 {
@@ -141,6 +144,12 @@ int ScopeServer::Init()
     
     Send("#");
     Send("U#");
+    
+    
+    focus_fd = open(focusport, O_RDWR | O_NOCTTY | O_SYNC);
+    set_interface_attribs (focus_fd, B9600, 0);  // set speed to 115,200 bps, 8n1 (no parity)
+    set_blocking (focus_fd, 0);                // set no blocking
+ 
     return 0;
 }
 
@@ -182,6 +191,9 @@ int ScopeServer::HandleXCommands(const char * s)
 	int move;	
 	sscanf(s, "focus%d", &move);
 	printf("move focus %d\n", move);
+        char buf[256];
+        sprintf(buf, "#m%d\n", move);
+        write(fd, buf, strlen(buf));
     }
 
     return 1234;
@@ -332,7 +344,7 @@ char ScopeServer::GetCC()
     do {
         total_time += 100000;
         n = read(fd, &c, 1);
-    } while(n == 0 && total_time<10000000);
+    } while(n == 0 && total_time<3000000);
     if (trace) printf("%c\n", c);
     return c;
 }
@@ -356,7 +368,7 @@ int ScopeServer::Reply()
  	    reply[idx + 1] = 0;            
 	    idx++;
         }	
-    } while(c != '#' && total_time< 10000000);
+    } while(c != '#' && total_time< 3000000);
     if (trace) printf("%s\n", reply); 
     return idx;
 }

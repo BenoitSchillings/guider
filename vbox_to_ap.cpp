@@ -268,6 +268,7 @@ int main()
 	int	cp = 0;
 
 	while (1) {
+		printf("waiting\n");	
 		int r = recv(fd, buf, sizeof(buf), 0);
 		if (r < 0) {
 			fprintf(stderr, "read: %s\n", strerror(errno));

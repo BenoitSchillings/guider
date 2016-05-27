@@ -600,7 +600,7 @@ int guide()
 {
         float   sum_x;
         float   sum_y;
-        int     frame_per_correction = 1;
+        int     frame_per_correction = 4;
         int     frame_count;
        	int	drizzle_dx = 0;
 	int	drizzle_dy = 0;
@@ -630,6 +630,8 @@ int guide()
 		}
 
 		hack_gain_upd(g);
+
+		int logger = 0;
 
 		if (g->HasGuideStar()) {
 			float cx;
@@ -664,6 +666,8 @@ int guide()
 				drizzle_dy = rand()%8 - 4;	
 			}
 
+			logger++;
+			if (logger == 100) { scope->Log(); logger == 0;};
 			float mult = 0.1 * cvGetTrackbarPos("mult", "video");	
 			blit(mult * g->GuideCrop(), uibm, 0, 0, 1000, 1000, 150, 150);	
 			DrawVal(uibm, "tot ", total_v, 2, "adu");	
@@ -842,16 +846,26 @@ int main(int argc, char **argv)
 	scope->Init();
 	scope->LongFormat();	
 	scope->Siderial();	
-	scope->XCommand("xfocus-5");
-	scope->XCommand("xfocus7");
+	//scope->XCommand("xfocus-5");
+	//scope->XCommand("xfocus7");
 
-	float ra = scope->RA();
-	float dec = scope->Dec();	
-	dec -= 1;	
-	printf("RA is %f\n", ra);
-	printf("DEC is %f\n", dec);	
-	ra -= 0.01;
-	dec = 20.0;	
+	int i = 0;
+
+	//while(1) {
+	//float ra = scope->RA();
+	//float dec = scope->Dec();	
+	//printf("RA is %f\n", ra);
+	//printf("DEC is %f\n", dec);	
+ 	//i++;
+//
+	//if (i % 1 == 0) {	
+	//	
+		//printf("%d\n", i);scope->Bump(0, 0.005);	
+	//}	
+	//}	
+
+	//ra -= 0.01;
+	//dec = 20.0;	
 
         if (argc == 1 || strcmp(argv[1], "-h") == 0) {
                	help(argv);
