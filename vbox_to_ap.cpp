@@ -117,7 +117,8 @@ void process(int fd, char *string)
 {
         char    reply[1024];
 	char	cmd[1024];
-	
+
+        printf("got %s\n", string);	
 	/*gotoxy(1, 9);*/printf("got %s             \n", string);
         
         if (match(string, ":V#")) {
@@ -268,7 +269,7 @@ int main()
 	int	cp = 0;
 
 	while (1) {
-		printf("waiting\n");	
+		//printf("waiting\n");	
 		int r = recv(fd, buf, sizeof(buf), 0);
 		if (r < 0) {
 			fprintf(stderr, "read: %s\n", strerror(errno));

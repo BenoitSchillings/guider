@@ -1,10 +1,10 @@
 <?xml version="1.0" ?>
-<exp val="648" />
-<mult val="4500" />
-<gain val="260000" />
+<exp val="-1" />
+<mult val="-100" />
+<gain val="-1000" />
 <scale val="270" />
 <crop val="1000" />
-<mount_dx1 val="-24000" />
-<mount_dy1 val="-24000" />
-<mount_dx2 val="25000" />
-<mount_dy2 val="-20000" />
+<mount_dx1 val="-16000" />
+<mount_dy1 val="30000" />
+<mount_dx2 val="-27000" />
+<mount_dy2 val="-16000" />

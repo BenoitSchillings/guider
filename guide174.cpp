@@ -600,7 +600,7 @@ int guide()
 {
         float   sum_x;
         float   sum_y;
-        int     frame_per_correction = 4;
+        int     frame_per_correction = 2;
         int     frame_count;
        	int	drizzle_dx = 0;
 	int	drizzle_dy = 0;
@@ -639,11 +639,11 @@ int guide()
 			float total_v;
 	
 			g->Centroid(&cx, &cy, &total_v);
-                        
 			if (total_v > 0) {
 				float dx = cx-g->ref_x + drizzle_dx;	
 				float dy = cy-g->ref_y + drizzle_dy;
-                                sum_x += dx;
+                               	printf("%f %f\n", dx, dy); 
+				sum_x += dx;
                                 sum_y += dy;
                                 frame_count++;
                                 
@@ -657,13 +657,15 @@ int guide()
                                     sum_y = 0;
                                     frame_count = 0;
                                     //printf("Move %f %f\n", tx, ty);	
-                                    g->Move(-tx, -ty);
-                                }
+                                    if (scope->XCommand("xneed_guiding") != 0) { 
+				    	g->Move(-tx * 1.8, -ty * 1.8);
+                               	    } 
+				}
 			}
 			
 			if (scope->XCommand("xdither") == 1) {
-				drizzle_dx = rand()%8 - 4;
-				drizzle_dy = rand()%8 - 4;	
+				drizzle_dx = rand()%4 - 2; 
+				drizzle_dy = rand()%4 - 2;	
 			}
 
 			logger++;

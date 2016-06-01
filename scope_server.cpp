@@ -1,4 +1,3 @@
-#include <errno.h>
 #include <termios.h>
 #include <unistd.h>
 #include <string.h>
@@ -19,7 +18,8 @@ public:;
 	int	Init();
     	int	Send(const char*);
     	int	Reply();
-    	char	GetCC();
+    	int	EatReply();	
+	char	GetCC();
     	void	Stop();
     	void	Done();
     	void	Siderial(); 
@@ -47,6 +47,7 @@ private:
 	double	GetF_RA();
 
 	int	dither_request;
+	int	need_guiding;
 };
 
 //----------------------------------------------------------------------------------------
@@ -116,13 +117,14 @@ void set_blocking (int fd, int should_block)
 
 const char *portname = "/dev/ttyUSB0";
 const char *portname1= "/dev/ttyUSB0";
-const char *focusport="/dev/ttyACM0";
+const char *focusport="/dev/ttyACM1";
 
 int ScopeServer::Init()
 {
     short_format = 0;
     dither_request = 0;
-    trace = 0; 
+    need_guiding = 1; 
+    trace = 1; 
     
     fd = open (portname, O_RDWR | O_NOCTTY | O_SYNC);
     
@@ -186,14 +188,28 @@ int ScopeServer::HandleXCommands(const char * s)
 	dither_request = 1;
 	return 0;
     }	
-   
+  
+    if (strcmp(s, "pause_guiding") == 0) {
+   	need_guiding = 0; 
+    }
+    
+    if (strcmp(s, "start_guiding") == 0) {
+   	need_guiding = 1; 
+    }
+    
+    if (strcmp(s, "need_guiding") == 0) {
+   	return need_guiding; 
+    }
+
+ 
     if (strncmp(s, "focus", 5) == 0) {
 	int move;	
 	sscanf(s, "focus%d", &move);
 	printf("move focus %d\n", move);
         char buf[256];
         sprintf(buf, "#m%d\n", move);
-        write(fd, buf, strlen(buf));
+        write(focus_fd, buf, strlen(buf));
+   	usleep(300000); 
     }
 
     return 1234;
@@ -239,7 +255,7 @@ void ScopeServer::Log()
 
 	printf("stime = %f\taz = %f\t el = %f\t ra = %f\t dec = %f\n", last_st, last_az, last_el, last_ra, last_dec);
 	
-	if (last_dec < -20 || last_dec > 70 || last_el < 20.0 || last_az > 200) {
+	if (last_dec < -20 || last_dec > 70 || last_el < 20.0 || last_az == 290) {
 		Stop();	
 		Done();
 		printf("emergency limit\n");
@@ -352,6 +368,14 @@ char ScopeServer::GetCC()
 
 //----------------------------------------------------------------------------------------
 
+int ScopeServer::EatReply()
+{
+	usleep(1000*1000);	//wait 1 second
+	int cnt = read(fd, &reply, 33);	//read up to 33 char
+	printf("eat = %d\n", cnt);
+	return cnt;
+}
+
 int ScopeServer::Reply()
 {
     reply[0] = 0;
@@ -445,9 +469,15 @@ int main()
 			scope->Send(command + 1);
 			scope->Reply();	
 		}
+		if (command[0] == 'f') {	//fucked up command
+			scope->Send(command + 1);
+			scope->EatReply();
+			scope->reply[0] = 0;	
+		}
+
 		if (scope->trace) {
-			gotoxy(1, 5);printf("server:: in command %s\n", command);
-			gotoxy(1, 6);printf("server:: reply %s\n", scope->reply);
+			printf("server:: in command %s\n", command);
+			printf("server:: reply %s\n", scope->reply);
 		}	
 		zmq::message_t msg_reply(strlen(scope->reply) + 1);
         	memcpy (msg_reply.data (), scope->reply, strlen(scope->reply) + 1);
