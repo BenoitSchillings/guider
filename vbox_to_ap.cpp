@@ -67,7 +67,20 @@ bool match(char *buf, const char *command)
 
 //----------------------------------------------------------------------------------------
 
+void cat_f(int fd, char *cmd)
+{
+        char    cmd_buf[1024];
+        char    reply[1024];
 
+        cmd_buf[0] = 'f'; cmd_buf[1] = 0;
+        strcat(cmd_buf, cmd);
+        the_scope->Send(cmd_buf);
+        send(fd, the_scope->reply, strlen(the_scope->reply) + 1, 0);
+        printf("reply %s\n", the_scope->reply);
+}
+
+
+//----------------------------------------------------------------------------------------
 
 void cat_r(int fd, char *cmd)
 {
@@ -78,7 +91,7 @@ void cat_r(int fd, char *cmd)
         strcat(cmd_buf, cmd);
         the_scope->Send(cmd_buf);
         send(fd, the_scope->reply, strlen(the_scope->reply) + 1, 0);
-        //gotoxy(1, 10);printf("reply %s\n", the_scope->reply);
+        printf("reply %s\n", the_scope->reply);
 }
 
 //----------------------------------------------------------------------------------------
@@ -93,7 +106,7 @@ void cat_c(int fd, char *cmd)
         strcat(cmd_buf, cmd);
         the_scope->Send(cmd_buf);
         send(fd, the_scope->reply, strlen(the_scope->reply) + 1, 0);
-        //gotoxy(1, 10);printf("reply %s              \n", the_scope->reply);
+        printf("reply %s              \n", the_scope->reply);
 }
 
 
@@ -118,8 +131,8 @@ void process(int fd, char *string)
         char    reply[1024];
 	char	cmd[1024];
 
-        printf("got %s\n", string);	
-	/*gotoxy(1, 9);*/printf("got %s             \n", string);
+        //printf("got %s\n", string);	
+	///*gotoxy(1, 9);*/printf("got %s             \n", string);
         
         if (match(string, ":V#")) {
 	    cat_r(fd, string);
@@ -222,7 +235,7 @@ void process(int fd, char *string)
         }
 
         if (match(string, ":CM")) {
-	    cat_r(fd, string);
+	    cat_f(fd, string);
 	    return;
         }
         
@@ -230,6 +243,15 @@ void process(int fd, char *string)
 	    cat_c(fd, string);
 	    return;
         }
+
+	if (match(string,":SL")) {
+	    cat_c(fd, string);
+	    return;
+        }
+	if (match(string, ":SC")) {
+	    cat_f(fd, string);
+	    return;	
+	}
 
         if (match(string, ":Sd")) {
 	    cat_c(fd, string);
@@ -240,9 +262,19 @@ void process(int fd, char *string)
                 cat_c(fd, string);
                 return;
         }
+
+	if (match(string, "#")) {
+	    	cat_n(fd, string);
+		return;	
+	}
+	
+	//if (match(string, ":U#")) {
+		//cat_n(fd, string);
+		//return;
+	//}
  
 
-	printf("*** missed %s\n", string);
+	//printf("*** missed %s\n", string);
 }
 
 //-------------------------------------------------------------------------------------
@@ -267,20 +299,33 @@ int main()
 	char	cur_cmd[1024];
 	char	buf[1024];	
 	int	cp = 0;
+	int	semi_count = 0;
 
 	while (1) {
-		//printf("waiting\n");	
 		int r = recv(fd, buf, sizeof(buf), 0);
 		if (r < 0) {
 			fprintf(stderr, "read: %s\n", strerror(errno));
 			return 1;
 		}
+		if (r != 0) {
+		}
+	
 		for (int i = 0; i < r; i++) {
 			cur_cmd[cp] = buf[i];
 			cur_cmd[cp+1] = 0;
+			if (buf[i] == ':') {
+				semi_count++;
+				if (semi_count == 4) {
+					buf[i] = '#';	
+					cur_cmd[cp] = '#';
+					semi_count = 0;
+				}	
+			}
+	
 			if (buf[i] == '#') {
 				process(fd, cur_cmd);
 				cp = 0;
+				semi_count = 0;
 			}
 			else
 				cp++;	

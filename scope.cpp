@@ -168,7 +168,7 @@ void Scope::Bump(double dx, double dy)
     int idx = dx * 1000.0;
     int idy = dy * 1000.0;
 
-    printf("bump %d %d\n", idx, idy); 
+    //printf("bump %d %d\n", idx, idy); 
     if (idx>999) idx = 999; 
     if (idx<-999) idx = -999;
     if (idy>999) idy = 999;
@@ -296,9 +296,9 @@ void Scope::Log()
 	last_ra = RA();
 	last_dec = Dec();
 
-	//printf("Local is %f\n", LocalTime());	
+	printf("Local is %f ", LocalTime());	
 	printf("stime = %f\taz = %f\t el = %f\t ra = %f\t dec = %f\n", last_st, last_az, last_el, last_ra, last_dec);
-	
+/*	
 	if (last_dec < -20 || last_dec > 70 || last_el < 20.0 || last_az > 195) {
 		Stop();	
 		Done();
@@ -313,6 +313,7 @@ void Scope::Log()
 
 		
 	printf("ra %f dec %f\n", el_az_to_ra(el, az), el_az_to_dec(el, az));	
+	*/	
 	return;
 }
 

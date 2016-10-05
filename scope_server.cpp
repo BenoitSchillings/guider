@@ -37,7 +37,7 @@ public:;
 
 	int 	fd;
     	int	focus_fd;
-	
+ 	int	err_count;	
 	char 	reply[512]; 
     	char	buf[512];
 	char	short_format;
@@ -117,15 +117,16 @@ void set_blocking (int fd, int should_block)
 
 const char *portname = "/dev/ttyUSB0";
 const char *portname1= "/dev/ttyUSB0";
-const char *focusport="/dev/ttyACM1";
+const char *focusport="/dev/ttyACM0";
 
 int ScopeServer::Init()
 {
     short_format = 0;
     dither_request = 0;
     need_guiding = 1; 
-    trace = 1; 
-    
+    trace = 0; 
+    err_count = 0;
+ 
     fd = open (portname, O_RDWR | O_NOCTTY | O_SYNC);
     
     if (fd < 0) {
@@ -145,9 +146,11 @@ int ScopeServer::Init()
     set_blocking (fd, 0);                // set no blocking
     
     Send("#");
-    Send("U#");
-    
-    
+    Send(":U#");
+    Send(":Bd 00*00:05#");
+    Send(":pS#");
+    Reply(); 
+    printf("reply is %s\n", reply); 
     focus_fd = open(focusport, O_RDWR | O_NOCTTY | O_SYNC);
     set_interface_attribs (focus_fd, B9600, 0);  // set speed to 115,200 bps, 8n1 (no parity)
     set_blocking (focus_fd, 0);                // set no blocking
@@ -254,11 +257,15 @@ void ScopeServer::Log()
 	double last_dec = Dec();
 
 	printf("stime = %f\taz = %f\t el = %f\t ra = %f\t dec = %f\n", last_st, last_az, last_el, last_ra, last_dec);
-	
-	if (last_dec < -20 || last_dec > 70 || last_el < 20.0 || last_az == 290) {
-		Stop();	
-		Done();
-		printf("emergency limit\n");
+	if ( last_dec < -20 || last_dec > 70 || last_el < 20.0 || last_az > 270) {
+		err_count++;
+		Send("#");
+		if(err_count > 15) {	
+			Stop();	
+			Done();
+			printf("emergency limit\n");
+			err_count = 0;	
+		}
 		//exit(-1); 	
 	}
 
@@ -370,11 +377,14 @@ char ScopeServer::GetCC()
 
 int ScopeServer::EatReply()
 {
-	usleep(1000*1000);	//wait 1 second
-	int cnt = read(fd, &reply, 33);	//read up to 33 char
+	usleep(400*1000);	//wait 1 second
+	int cnt = read(fd, &reply, 80);	//read up to 33 char
 	printf("eat = %d\n", cnt);
 	return cnt;
 }
+
+//----------------------------------------------------------------------------------------
+
 
 int ScopeServer::Reply()
 {
@@ -469,7 +479,7 @@ int main()
 			scope->Send(command + 1);
 			scope->Reply();	
 		}
-		if (command[0] == 'f') {	//fucked up command
+		if (command[0] == 'f') {	//f**** up command
 			scope->Send(command + 1);
 			scope->EatReply();
 			scope->reply[0] = 0;	
