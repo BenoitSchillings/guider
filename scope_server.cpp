@@ -116,7 +116,7 @@ void set_blocking (int fd, int should_block)
 //----------------------------------------------------------------------------------------
 
 const char *portname = "/dev/ttyUSB0";
-const char *portname1= "/dev/ttyUSB0";
+const char *portname1= "/dev/ttyUSB1";
 const char *focusport="/dev/ttyACM0";
 
 int ScopeServer::Init()

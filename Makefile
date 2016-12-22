@@ -46,7 +46,7 @@ CFLAGS += -lrt
 endif
 
 
-all:guide174 monitor planet scope_server vbox_to_ap focus scopestop joystick nn receive
+all:guide174 monitor  scope_server vbox_to_ap focus scopestop joystick receive
 
 guide174:  AACoordinateTransformation.cpp  ser.cpp scope.cpp guide174.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
 	$(CC) -march=native -O3 guide174.cpp  AACoordinateTransformation.cpp util.cpp $(TINY) -o guide174 $(CFLAGS)  $(OPENCV) -lASICamera
@@ -78,12 +78,6 @@ planet: ser.cpp   AACoordinateTransformation.cpp  scope.cpp planet.cpp util.cpp 
 
 monitor: ser.cpp   AACoordinateTransformation.cpp  scope.cpp monitor.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
 	$(CC) -march=native -O3 monitor.cpp   AACoordinateTransformation.cpp   util.cpp $(TINY) -o monitor $(CFLAGS)  $(OPENCV) -lASICamera
-
-nn: nn.cpp
-	g++ -Wno-deprecated-declarations -std=gnu++11 nn.cpp ./lib/libopennn.a ./lib/libtinyxml2.a -o nn
-
-nn1: nn1.cpp
-	g++ -Wno-deprecated-declarations -std=gnu++11 nn1.cpp ./lib/libopennn.a ./lib/libtinyxml2.a -o nn1
 
 ./tinyobj/tinystr.cpp.o: ./tiny/tinystr.cpp
 	$(CC)  -c ./tiny/tinystr.cpp -o ./tinyobj/tinystr.cpp.o $(CFLAGS)

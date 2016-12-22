@@ -150,7 +150,7 @@ public:
 	float	gain_x;
 	float	gain_y;
 private:
-	void 	InitCam(int cx, int cy, int width, int height);
+	void 	InitCam();
 	
 public:
 	float 	error_to_tx(float mx, float my);
@@ -226,15 +226,13 @@ void Guider::MinDev()
 	sum = sum / count;
 	sum /= 2.0;	
 	dev = sqrt(sum);
-	//printf("t = %ld bg = %f, dev = %f\n", time(0) % 60, background, dev);
+	printf("t = %ld bg = %f, dev = %f\n", time(0) % 60, background, dev);
 }
 
 //--------------------------------------------------------------------------------------
 
 	Guider::Guider()
 {
-	width = 800; 
-	height = 600; 
 	frame = 0;
 	background = 0;
 	dev = 100;
@@ -247,7 +245,7 @@ void Guider::MinDev()
 	ref_x = -1;
 	ref_y = -1;
 
-	if (!sim) InitCam(0, 0, width, height);
+	if (!sim) InitCam();
 
 
 	mount_dx1 = get_value("mount_dx1");
@@ -341,7 +339,7 @@ bool Guider::FindGuideStar()
 //--------------------------------------------------------------------------------------
 
 
-void Guider::InitCam(int cx, int cy, int width, int height)
+void Guider::InitCam()
 {
     int CamNum=0;
     bool bresult;
@@ -366,6 +364,9 @@ void Guider::InitCam(int cx, int cy, int width, int height)
     initCamera(); //this must be called before camera operation. and it only need init once
     printf("resolution %d %d\n", getMaxWidth(), getMaxHeight()); 
 
+    width = getMaxWidth();
+    height = getMaxHeight();
+
     setImageFormat(width, height, 2, IMG_RAW16);
     setValue(CONTROL_BRIGHTNESS, 100, false);
     setValue(CONTROL_GAIN, 0, false);
@@ -380,7 +381,7 @@ void Guider::InitCam(int cx, int cy, int width, int height)
     //printf("temp = %d\n", temp); 
     //float temp1 = getSensorTemp();
 
-    setStartPos(0, 0);
+    //setStartPos(0, 0);
 }
 
 //--------------------------------------------------------------------------------------
@@ -893,12 +894,13 @@ void intHandler(int dummy=0) {
 int main(int argc, char **argv)
 {
 	signal(SIGINT, intHandler);
-
+/*
     	scope = new Scope();
 	scope->Init();
 	scope->LongFormat();	
 	scope->Siderial();	
 	scope->SetRate(0.5 * -0.00553, 0*-0.1*-0.0024);	
+*/	
 	//scope->XCommand("xfocus-5");
 	//scope->XCommand("xfocus7");
 

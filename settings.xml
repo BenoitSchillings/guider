@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
-<exp val="615" />
-<mult val="2000" />
-<gain val="313000" />
+<exp val="3" />
+<mult val="1100" />
+<gain val="0" />
 <scale val="1000" />
 <crop val="500" />
 <mount_dx1 val="-8000" />

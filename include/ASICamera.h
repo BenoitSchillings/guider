@@ -26,7 +26,10 @@ enum Control_TYPE{ //Control ID//
 	CONTROL_COOLERPOWERPERC,
 	CONTROL_TARGETTEMP,
 	CONTROL_COOLER_ON,
-	CONTROL_MONO_BIN
+	CONTROL_MONO_BIN,
+	CONTROL_FAN_ON,
+	CONTROL_PATTERN_ADJUST,
+	CONTROL_ANTI_DEW_HEATER
 };
 
 
@@ -137,7 +140,7 @@ extern "C" {
 	//return true when success false when failed
 	ASICAMERA_API  bool setStartPos(int startx, int starty); 
 	// set new image format 
-	//Make sure width%4 = 0 and height%2 = 0, further, for USB2.0 camera ASI120, please make sure that width*height%1024=0. 
+	//Make sure width%8 = 0 and height%2 = 0, further, for USB2.0 camera ASI120, please make sure that width*height%1024=0. 
 	ASICAMERA_API  bool setImageFormat(int width, int height,  int binning, IMG_TYPE img_type);  
 	//get the image type current set
 	ASICAMERA_API  IMG_TYPE getImgType(); 
