@@ -9,6 +9,8 @@
 #include <zmq.hpp>
 #include <iostream>
 #include "/home/benoit/skyx_tcp/skyx.h"
+#include "ao.h"
+
 
 bool sim = false;
 

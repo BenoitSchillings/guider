@@ -115,7 +115,7 @@ void set_blocking (int fd, int should_block)
 
 //----------------------------------------------------------------------------------------
 
-const char *portname = "/dev/ttyUSB1";
+const char *portname = "/dev/ttyUSB0";
 const char *portname1= "/dev/ttyUSB1";
 const char *focusport="/dev/ttyACM0";
 
@@ -212,7 +212,7 @@ int ScopeServer::HandleXCommands(const char * s)
 	printf("move focus %d\n", move);
         char buf[256];
         sprintf(buf, "#m%d\n", move);
-        write(focus_fd, buf, strlen(buf));
+        int foo = write(focus_fd, buf, strlen(buf));
    	usleep(300000); 
     }
 
