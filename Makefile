@@ -53,7 +53,7 @@ guide174:  AACoordinateTransformation.cpp  ser.cpp scope.cpp guide174.cpp util.c
 
 	
 guide174ao:  AACoordinateTransformation.cpp  ser.cpp scope.cpp guide174.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
-	$(CC) -march=native -O3 guide174ao.cpp  AACoordinateTransformation.cpp util.cpp ~/skyx_tcp/sky_ip.cpp $(TINY) -o guide174ao $(CFLAGS)  $(OPENCV) -lASICamera
+	$(CC) -march=native -O3 guide174ao.cpp  AACoordinateTransformation.cpp util.cpp ~/skyx_tcp/skyx.cpp ~/skyx_tcp/sky_ip.cpp $(TINY) -o guide174ao $(CFLAGS)  $(OPENCV) -lASICamera
 
 
 	

@@ -8,11 +8,12 @@
 #include <signal.h>
 #include <zmq.hpp>
 #include <iostream>
+#include "/home/benoit/skyx_tcp/skyx.h"
 
 bool sim = false;
 
 #include "ser.cpp"
-#include "scope.cpp"
+//#include "scope.cpp"
 
 Scope *scope;
 //--------------------------------------------------------------------------------------
@@ -689,9 +690,9 @@ restart:
                     sum_x = 0;
                     sum_y = 0;
                     frame_count = 0;
-                    if (scope->XCommand("xneed_guiding") != 0) {
+                    //if (scope->XCommand("xneed_guiding") != 0) {
                         g->Move(-tx * 1.0, -ty * 1.0);
-                    }
+                    //}
                 }
             }
 
@@ -707,10 +708,10 @@ restart:
                 err = 0;
             }
 
-            if (scope->XCommand("xdither") == 1) {
-                drizzle_dx = rand()%4 - 2;
-                drizzle_dy = rand()%4 - 2;
-            }
+            //if (scope->XCommand("xdither") == 1) {
+                //drizzle_dx = rand()%4 - 2;
+                //drizzle_dy = rand()%4 - 2;
+            //}
 
 
             if (logger % 50 == 0) {
@@ -782,7 +783,7 @@ int calibrate()
         x1 = g->ref_x;
        	printf("x5551\n"); 
  	y1 = g->ref_y;
-       	printf("x5552]n"); 
+       	printf("x5552\n"); 
  	printf("v1 %f %f\n", x1, y1);
 
         for (int i =0; i < 2; i++) g->Move(0.9, 0);
@@ -902,30 +903,8 @@ int main(int argc, char **argv)
     signal(SIGINT, intHandler);
 
     scope = new Scope();
-    //scope->Init();
-    //scope->LongFormat();
-    //scope->Siderial();
-    //scope->SetRate(0.5 * -0.00553, 0*-0.1*-0.0024);
-    //scope->XCommand("xfocus-5");
-    //scope->XCommand("xfocus7");
 
     int i = 0;
-
-    //while(1) {
-    //float ra = scope->RA();
-    //float dec = scope->Dec();
-    //printf("RA is %f\n", ra);
-    //printf("DEC is %f\n", dec);
-    //i++;
-//
-    //if (i % 1 == 0) {
-    //
-    //printf("%d\n", i);scope->Bump(0, 0.005);
-    //}
-    //}
-
-    //ra -= 0.01;
-    //dec = 20.0;
 
     if (argc == 1 || strcmp(argv[1], "-h") == 0) {
         help(argv);
