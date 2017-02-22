@@ -115,7 +115,7 @@ void set_blocking (int fd, int should_block)
 
 //----------------------------------------------------------------------------------------
 
-const char *portname = "/dev/ttyUSB0";
+const char *portname = "/dev/ttyUSB1";
 const char *portname1= "/dev/ttyUSB1";
 const char *focusport="/dev/ttyACM0";
 
@@ -144,7 +144,8 @@ int ScopeServer::Init()
 
     set_interface_attribs (fd, B9600, 0);  // set speed to 115,200 bps, 8n1 (no parity)
     set_blocking (fd, 0);                // set no blocking
-    
+   
+    //Send(":V#"); 
     Send("#");
     Send(":U#");
     Send(":Bd 00*00:05#");
@@ -257,7 +258,7 @@ void ScopeServer::Log()
 	double last_dec = Dec();
 
 	printf("stime = %f\taz = %f\t el = %f\t ra = %f\t dec = %f\n", last_st, last_az, last_el, last_ra, last_dec);
-	if ( last_dec < -20 || last_dec > 70 || last_el < 20.0 || last_az > 270) {
+	if ( last_dec < -20 || last_dec > 70 || last_el < 20.0 || last_az > 380) {
 		err_count++;
 		Send("#");
 		if(err_count > 15) {	
