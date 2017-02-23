@@ -73,14 +73,30 @@ void set_blocking (int fd, int should_block)
 //----------------------------------------------------------------------------------------
 
 
-const char *aoport="/dev/ttyACM0";
+const char *aoport="/dev/ttyACM1";
 
 //----------------------------------------------------------------------------------------
+
+    AO::AO()
+{
+	xpos = 0;
+	ypos = 0;
+}
+
+//----------------------------------------------------------------------------------------
+
 
 int AO::Init()
 {
 
     ao_fd = open(aoport, O_RDWR | O_NOCTTY | O_SYNC);
+    
+
+    if (ao_fd < 0) {
+  	printf("AO Connection not found\n");
+	exit(-1); 
+    }
+
     set_interface_attribs (ao_fd, B9600, 0);  // set speed to 115,200 bps, 8n1 (no parity)
     set_blocking (ao_fd, 0);                // set no blocking
  
@@ -101,4 +117,21 @@ int AO::Send(const char * s)
 }
 
 //----------------------------------------------------------------------------------------
+
+void AO::Center()
+{
+	Send("#r\n");
+}
+
+//----------------------------------------------------------------------------------------
+
+void AO::Set(int x, int y)
+{
+	char	buf[256];
+	
+	sprintf(buf, "#g%d %d\n", x, y);
+	Send(buf);
+	xpos = x;
+	ypos = y;	
+}
 
