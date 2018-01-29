@@ -115,7 +115,7 @@ void set_blocking (int fd, int should_block)
 
 //----------------------------------------------------------------------------------------
 
-const char *portname = "/dev/ttyUSB0";
+const char *portname = "/dev/Prolific";
 const char *portname1= "/dev/ttyUSB1";
 const char *focusport="/dev/ttyACM0";
 
@@ -364,7 +364,7 @@ char ScopeServer::GetCC()
     char        c;
     int		n;
 
-    usleep(15000);
+    usleep(25000);
     do {
         total_time += 100000;
         n = read(fd, &c, 1);
@@ -394,7 +394,7 @@ int ScopeServer::Reply()
     long	total_time = 0;
     char	c;
    
-    usleep(15000); 
+    usleep(25000); 
     do {
         total_time += 100000;
         int n = read(fd, &c, 1);

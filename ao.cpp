@@ -97,9 +97,10 @@ int AO::Init()
 	exit(-1); 
     }
 
-    set_interface_attribs (ao_fd, B9600, 0);  // set speed to 115,200 bps, 8n1 (no parity)
+    set_interface_attribs (ao_fd, B115200, 0);  // set speed to 115,200 bps, 8n1 (no parity)
     set_blocking (ao_fd, 0);                // set no blocking
- 
+
+    usleep(1000*1000*6); 
     return 0;
 }
 
@@ -120,7 +121,10 @@ int AO::Send(const char * s)
 
 void AO::Center()
 {
+	printf("ao reset\n");	
 	Send("#r\n");
+	usleep(1000*1000*6);
+	printf("ao reset done\n");
 }
 
 //----------------------------------------------------------------------------------------
@@ -128,10 +132,23 @@ void AO::Center()
 void AO::Set(int x, int y)
 {
 	char	buf[256];
-	
+
+	printf("AO::%d %d\n", x, y);	
 	sprintf(buf, "#g%d %d\n", x, y);
 	Send(buf);
 	xpos = x;
 	ypos = y;	
+	printf("AO::done %s\n", buf);
+}
+
+//----------------------------------------------------------------------------------------
+
+
+void AO::Bump(int dx, int dy)
+{
+	int target_x = xpos + dx;
+	int target_y = ypos + dy;
+
+	Set(target_x, target_y);
 }
 

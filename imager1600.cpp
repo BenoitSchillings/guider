@@ -38,12 +38,12 @@ using namespace std;
 float  g_gain = 150.0;
 float  g_mult = 2.0;
 float  g_exp = 0.1;
-float  g_bin = 2;
+float  g_bin = 1;
 
 float gain0 = -1;
 float exp0 = -1;
 
-float g_crop = 1.0;
+float g_crop = 0.9;
 char g_fn[256];
 //--------------------------------------------------------------------------------------
 
@@ -160,6 +160,9 @@ public:
     float	mount_dy2;
     float	gain_x;
     float	gain_y;
+    float	gmax;
+    float	gavg; 
+    bool	exit_key;
 private:
     void 	InitCam(int cx, int cy, int width, int height);
 
@@ -220,36 +223,52 @@ void Guider::MinDev()
 {
     float	count = 0;
     float	sum = 0;
+    float	max = 0;
+    float	avg = 0;
 
     background = 1e9;
 
     for (int y = 1; y < (height-1); y += 20) {
         for (int x = 1; x < (width-1); x += 20) {
             float v = image.at<unsigned short>(y, x);
-            float v1 = image.at<unsigned short>(y, x + 1);
-
+            //float v1 = image.at<unsigned short>(y, x + 1);
+	    avg += v;
+	    if (v > max) max = v;
             if (v < background) background = v;
             count += 1;
-            float v2 = (v1-v);
-            sum += (v2*v2);
+            //float v2 = (v1-v);
+            //sum += (v2*v2);
         }
     }
-    sum = sum / count;
-    sum /= 2.0;
-    dev = sqrt(sum);
-    printf("t = %ld bg = %f, dev = %f\n", time(0) % 60, background, dev);
+    //sum = sum / count;
+    //sum /= 2.0;
+    //dev = sqrt(sum);
+    avg = avg / count;
+    gavg = avg; 
+    printf("max = %f, avg= %f\n", max, avg);
+    gmax = max;
 }
 
 //--------------------------------------------------------------------------------------
 
-#define XX  4656
-#define YY  3520
-
+//#define XX  4656
+//#define YY  3520
+//#define XX 768 
+//#define YY 512 
+//#define XX 1936
+//#define YY 1216
+//#define XX 1280
+//#define YY 1024
+#define XX 3096
+#define YY 2080
 
 Guider::Guider()
 {
     width = (XX * g_crop) / g_bin;
     height = (YY * g_crop) /g_bin;
+    
+    width &= 0xfff0;
+    height &= 0xfff0;
     frame = 0;
     background = 0;
     dev = 100;
@@ -348,7 +367,7 @@ bool Guider::FindGuideStar()
         ref_y = -1;
         return false;
     }
-    printf("max %ld\n", max);
+    //printf("max %ld\n", max);
     return true;
 }
 
@@ -361,6 +380,8 @@ void Guider::InitCam(int cx, int cy, int width, int height)
     int CamNum=0;
     bool bresult;
 
+    //cx = 1000;
+    //cy = 400;
 
     int numDevices = getNumberOfConnectedCameras();
     if(numDevices <= 0) {
@@ -386,21 +407,16 @@ void Guider::InitCam(int cx, int cy, int width, int height)
     setValue(CONTROL_GAIN, 0, false);
     printf("max %d\n", getMax(CONTROL_BANDWIDTHOVERLOAD));
 
-    setValue(CONTROL_BANDWIDTHOVERLOAD, 80, false); //lowest transfer speed
+    setValue(CONTROL_BANDWIDTHOVERLOAD, 35, true); //lowest transfer speed
     setValue(CONTROL_EXPOSURE, 10, false);
     setValue(CONTROL_HIGHSPEED, 1, false);
     setValue(CONTROL_COOLER_ON, 1, false);
-    setValue(CONTROL_TARGETTEMP,-5, false);
+    setValue(CONTROL_TARGETTEMP,-17, false);
+    setValue(CONTROL_HARDWAREBIN, 1, false); 
     bool foo; 
     
-    for (int i = 0; i < 4; i++) {
-    	int temp = getValue(CONTROL_TEMPERATURE, &foo);
-    	printf("temp = %d\n", temp);
-   	
-	usleep(1000000); 
-    } 
-     //float temp1 = getSensorTemp();
-
+    float temp1 = getSensorTemp();
+    printf("%f\n", temp1);
     setStartPos(cx, cy);
 }
 
@@ -483,10 +499,21 @@ bool Guider::GetFrame()
     bool got_it;
     int total = 0;
 
-    printf("t0\n");
+    if (exp > 1.0) {
+	float dt = exp;
+	while(dt > 0.2) {
+		char c = cvWaitKey(1);
+		if (c == 27) {
+			exit_key = true;
+			return 0;
+		}
+
+		usleep(200*1000);
+		dt -= 0.2;
+	}
+    }
 
     got_it = getImageData(image.ptr<uchar>(0), width * height * sizeof(PTYPE), -1);
-    printf("t1\n");
 
     if (!got_it) {
         printf("bad cam\n");
@@ -538,13 +565,14 @@ void ui_setup()
 {
     namedWindow("video", 1);
     createTrackbar("gain", "video", 0, 600, 0);
-    createTrackbar("exp", "video", 0, 1000, 0);
-    createTrackbar("mult", "video", 0, 200, 0);
+    createTrackbar("exp", "video", 0, 60000, 0);
+    createTrackbar("mult", "video", 0, 900, 0);
     createTrackbar("Sub", "video", 0, 45500, 0);
 
     setTrackbarPos("gain", "video", g_gain);
     setTrackbarPos("exp", "video", 1000.0 * g_exp);
     setTrackbarPos("mult", "video", 10.0 *g_mult);
+    setTrackbarPos("Sub", "video", 3800);
 }
 
 //--------------------------------------------------------------------------------------
@@ -566,26 +594,37 @@ int field_center()
 
     int cnt = 0;
 
+    Mat resized;
+
     while(1) {
-        printf("p0\n");
         g->GetFrame();
+    float temp1 = getSensorTemp();
+    printf("%f\n", temp1);
 
         cnt++;
         if (g->frame % 1 == 0) {
             g->MinDev();
-            center(g->image);
-            DrawVal(g->image, "exp ", g->exp, 0, "sec");
-            DrawVal(g->image, "gain", g->gain, 1, "");
-            DrawVal(g->image, "frame", g->frame*1.0, 2, "");
+            
+            float k = 2;
 
-	    g->image = g->image - (cvGetTrackbarPos("Sub", "video") - 1000);
-            g->image = g->image * (0.1 * cvGetTrackbarPos("mult", "video"));
+            resize(g->image, resized, Size(0, 0), k, k, INTER_AREA);
+
+            center(resized);
+
+	    center(resized);
+            DrawVal(resized, "exp ", g->exp, 0, "sec");
+            DrawVal(resized, "gain", g->gain, 1, "");
+            DrawVal(resized, "frame", g->frame*1.0, 2, "");
+
+	    resized = resized - (cvGetTrackbarPos("Sub", "video"));
+            resized = resized * (0.1 * cvGetTrackbarPos("mult", "video"));
  
-	    cv::imshow("video", g->image);
+	    cv::imshow("video", resized);
             char c = cvWaitKey(1);
+
             hack_gain_upd(g);
 
-            if (c == 27) {
+            if (c == 27 || g->exit_key) {
                 stopCapture();
                 closeCamera();
                 return 0;
@@ -601,7 +640,7 @@ int field_center()
 int find_field()
 {
     Guider *g;
-
+    
     g = new Guider();
 
     ui_setup();
@@ -618,7 +657,7 @@ int find_field()
         if (g->frame % 1 == 0) {
             g->MinDev();
             
-            g->image = g->image - (cvGetTrackbarPos("Sub", "video") - 1000);
+            g->image = g->image - (cvGetTrackbarPos("Sub", "video"));
             g->image = g->image * (0.1 * cvGetTrackbarPos("mult", "video"));
 
             center(g->image);
@@ -626,11 +665,19 @@ int find_field()
             DrawVal(g->image, "exp ", g->exp, 0, "sec");
             DrawVal(g->image, "gain", g->gain, 1, "");
             DrawVal(g->image, "frame", g->frame*1.0, 2, "");
+	
+	    if (cnt % 5 == 0) {
+		    float temp1 = getSensorTemp();
+		    printf("temp=%f\n", temp1);
+	    }
 
- 
 	    cv::imshow("video", g->image);
             char c = cvWaitKey(1);
             hack_gain_upd(g);
+
+	    if (c =='a') {
+	   	setTrackbarPos("Sub", "video", g->gavg - 1000); 
+	    }
 
             if (c == 27) {
                 stopCapture();
@@ -648,14 +695,16 @@ int take()
 {
     Guider *g;
     char   buf[512];
-    
+   
+    g_crop = 1/1.0;
+ 
     g = new Guider();
 
     ui_setup();
     hack_gain_upd(g);
 
     startCapture();
-
+    g->exit_key = false;
     int cnt = 0;
 
     sprintf(buf, "%s_%ld.ser", g_fn, time(0));
@@ -663,29 +712,39 @@ int take()
     write_header(out, g->width, g->height, 1000);
 
     Mat resized;
+
+    int save = 0;
  
     while(1) {
-        printf("frame %d\n", g->frame);
+        printf("frame %d, %d\n", g->frame, save);
         g->GetFrame();
         cnt++;
-        if (g->frame % 1 == 0) {
             
             ushort *src;
 
             src = (ushort*)g->image.ptr<uchar>(0);
 
-
-            fwrite(src, 1, g->width*g->height*2, out);
-
+	    char yes = 0;
 
 	    g->MinDev();
-           
+	    //if (g->gavg > 8000 && g->gavg < 13000) {
+            	fwrite(src, 1, g->width*g->height*2, out);
+	   	save++; 
+	   	//yes = 1; 
+	    //}
+
+            if (g->frame %25 == 0) {
+
+            float temp1 = getSensorTemp();
+    	    printf("%f\n", temp1);
  
-            resize(g->image, resized, Size(0, 0), 0.25, 0.25, INTER_AREA);
+	    float k = 0.5;
+ 
+            resize(g->image, resized, Size(0, 0), k, k, INTER_AREA);
 
 	    center(resized);
             
-            resized = resized - (cvGetTrackbarPos("Sub", "video") - 1000);
+            resized = resized - (cvGetTrackbarPos("Sub", "video"));
             resized = resized * (0.1 * cvGetTrackbarPos("mult", "video"));
 
             DrawVal(resized, "exp ", g->exp, 0, "sec");
@@ -695,13 +754,20 @@ int take()
  
 	    cv::imshow("video", resized);
             char c = cvWaitKey(1);
+	    if (c != 27) {
+	            c = cvWaitKey(1);
+	    }
+
             hack_gain_upd(g);
 
 	    resized.release();
-            if (c == 27) {
+            if (g->frame == 26000 || c == 27 || g->exit_key) {
                 stopCapture();
                 closeCamera();
-                fclose(out);
+                write_header(out, g->width, g->height, g->frame);
+
+ 
+		fclose(out);
                 return 0;
             }
         }
@@ -751,7 +817,7 @@ int guide()
 {
     float   sum_x;
     float   sum_y;
-    int     frame_per_correction = 2;
+    int     frame_per_correction = 3;
     int     frame_count;
     int	drizzle_dx = 0;
     int	drizzle_dy = 0;
@@ -824,9 +890,9 @@ restart:
                     sum_x = 0;
                     sum_y = 0;
                     frame_count = 0;
-                    if (scope->XCommand("xneed_guiding") != 0) {
-                        g->Move(-tx * 1.0, -ty * 1.0);
-                    }
+                    //if (scope->XCommand("xneed_guiding") != 0) {
+                        g->Move(-tx * 2.0, -ty * 2.0);
+                    //}
                 }
             }
 
@@ -842,10 +908,10 @@ restart:
                 err = 0;
             }
 
-            if (scope->XCommand("xdither") == 1) {
-                drizzle_dx = rand()%4 - 2;
-                drizzle_dy = rand()%4 - 2;
-            }
+            //if (scope->XCommand("xdither") == 1) {
+                //drizzle_dx = rand()%4 - 2;
+                //drizzle_dy = rand()%4 - 2;
+            //}
 
 
             if (logger % 50 == 0) {
@@ -1038,7 +1104,7 @@ int main(int argc, char **argv)
 {
     signal(SIGINT, intHandler);
 
-    scope = new Scope();
+    //scope = new Scope();
     //scope->Init();
     //scope->LongFormat();
     //scope->Siderial();
@@ -1049,16 +1115,10 @@ int main(int argc, char **argv)
     int i = 0;
 
     //while(1) {
-    //float ra = scope->RA();
-    //float dec = scope->Dec();
-    //printf("RA is %f\n", ra);
-    //printf("DEC is %f\n", dec);
-    //i++;
-//
-    //if (i % 1 == 0) {
-    //
-    //printf("%d\n", i);scope->Bump(0, 0.005);
-    //}
+    	//float ra = scope->RA();
+    	//float dec = scope->Dec();
+    	//printf("RA is %f\n", ra);
+    	//printf("DEC is %f\n", dec);
     //}
 
     //ra -= 0.01;

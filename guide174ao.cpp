@@ -9,15 +9,15 @@
 #include <zmq.hpp>
 #include <iostream>
 #include "/home/benoit/skyx_tcp/skyx.h"
-#include "ao.h"
+
 
 
 bool sim = false;
 
 #include "ser.cpp"
-//#include "scope.cpp"
 
 Scope *scope;
+
 //--------------------------------------------------------------------------------------
 
 float get_value(const char *name);
@@ -33,7 +33,7 @@ using namespace std;
 #define ushort unsigned short
 #define uchar unsigned char
 #define PTYPE unsigned short
-#define BOX_HALF 14 // Centroid box half width/height
+#define BOX_HALF 36 // Centroid box half width/height
 
 //--------------------------------------------------------------------------------------
 
@@ -237,8 +237,8 @@ void Guider::MinDev()
 
 Guider::Guider()
 {
-    width = 1400;
-    height = 1200;
+    width = 1936/2;
+    height = 1200/2; 
     frame = 0;
     background = 0;
     dev = 100;
@@ -246,7 +246,7 @@ Guider::Guider()
     image = Mat(Size(width, height), CV_16UC1);
     temp_image = Mat(Size(width, height), CV_16UC1);
 
-    guide_box_size = 14;
+    guide_box_size = 32;
 
     ref_x = -1;
     ref_y = -1;
@@ -258,8 +258,8 @@ Guider::Guider()
     mount_dx2 = get_value("mount_dx2");
     mount_dy1 = get_value("mount_dy1");
     mount_dy2 = get_value("mount_dy2");
-    gain_x = 1.5;
-    gain_y = 1.5;
+    gain_x = 1.0;
+    gain_y = 1.0;
 }
 
 //--------------------------------------------------------------------------------------
@@ -267,35 +267,8 @@ Guider::Guider()
 
 void	Guider::Move(float dx, float dy)
 {
-    dx *= gain_x;
-    dy *= gain_y;
-
-    printf("%f %f\n", dx, dy);
     scope->Bump(dx, dy);
     return;
-
-    if (fabs(dx) < 0.02) {
-        dx = 0;
-    }
-    if (fabs(dy) < 0.02) {
-        dy = 0;
-    }
-
-    if (dx > 0) {
-        pulseGuide(guideEast, dx*1000.0);
-    }
-
-    if (dx < 0) {
-        pulseGuide(guideWest, -dx*1000.0);
-    }
-
-    if (dy > 0) {
-        pulseGuide(guideNorth, dy*1000.0);
-    }
-
-    if (dy < 0) {
-        pulseGuide(guideSouth, -dy*1000.0);
-    }
 }
 
 //--------------------------------------------------------------------------------------
@@ -318,8 +291,8 @@ bool Guider::FindGuideStar()
     int	cx = width / 2;
     int	cy = height / 2;
 
-    for (y = cy - 300; y < cy + 300; y++) {
-        for (x = cx - 400; x < cx + 400; x++) {
+    for (y = 30; y < height - 30; y++) {
+        for (x = 30; x < width - 30; x++) {
             int v = temp_image.at<unsigned short>(y, x) +
                     temp_image.at<unsigned short>(y, x + 1) +
                     temp_image.at<unsigned short>(y + 1, x) +
@@ -337,7 +310,7 @@ bool Guider::FindGuideStar()
         ref_y = -1;
         return false;
     }
-    printf("max %ld\n", max);
+    //printf("max %ld, %d %d\n", max, ref_x, ref_y);
     return true;
 }
 
@@ -369,23 +342,18 @@ void Guider::InitCam(int cx, int cy, int width, int height)
 
     initCamera(); //this must be called before camera operation. and it only need init once
     printf("resolution %d %d\n", getMaxWidth(), getMaxHeight());
-
+ 
+    //pulseGuide(guideNorth, 250);
     setImageFormat(width, height, 2, IMG_RAW16);
     setValue(CONTROL_BRIGHTNESS, 250, false);
     setValue(CONTROL_GAIN, 0, false);
     printf("max %d\n", getMax(CONTROL_BANDWIDTHOVERLOAD));
 
-    setValue(CONTROL_BANDWIDTHOVERLOAD, 64, false); //lowest transfer speed
+    setValue(CONTROL_BANDWIDTHOVERLOAD, 44, false); //lowest transfer speed
     setValue(CONTROL_EXPOSURE, 10, false);
     setValue(CONTROL_HIGHSPEED, 1, false);
-    setValue(CONTROL_COOLER_ON, 1, false);
-    setValue(CONTROL_TARGETTEMP,-150, false);
+    setValue(CONTROL_HARDWAREBIN, 1, false); 
     bool foo; 
-    int temp = getValue(CONTROL_TEMPERATURE, &foo);
-    printf("temp = %d\n", temp);
-    //float temp1 = getSensorTemp();
-
-    setStartPos(360, 800);
 }
 
 //--------------------------------------------------------------------------------------
@@ -396,8 +364,6 @@ void Guider::Centroid(float*cx, float*cy, float*total_v)
     float cnt;
 
     MinDev();
-    //printf("%f %f\n", background, dev);
-
     cnt = 0.0;
 
     for (int j = 0; j < 4; j++)
@@ -442,7 +408,7 @@ void Guider::Centroid(float*cx, float*cy, float*total_v)
 bool Guider::GetFrame()
 {
     frame++;
-    printf("getframe\n");
+    //printf("getframe\n");
     if (sim) {
 
         rectangle(image,
@@ -475,7 +441,7 @@ bool Guider::GetFrame()
         printf("bad cam\n");
         //exit(-1);
     }
-
+    //printf("gd\n");
     return got_it;
 }
 
@@ -486,7 +452,7 @@ Mat Guider::GuideCrop()
     Mat tmp;
 
     tmp = Mat(image, Rect(ref_x - guide_box_size, ref_y - guide_box_size, guide_box_size*2, guide_box_size * 2));
-    resize(tmp, tmp, Size(0, 0), 6, 6, INTER_NEAREST);
+    resize(tmp, tmp, Size(0, 0), 3, 3, INTER_NEAREST);
     return tmp;
 }
 
@@ -538,7 +504,6 @@ int find_guide()
     Guider *g;
 
     g = new Guider();
-
     ui_setup();
     hack_gain_upd(g);
 
@@ -547,10 +512,8 @@ int find_guide()
     int cnt = 0;
 
     while(1) {
-        printf("p0\n");
         g->GetFrame();
 
-        printf("p1\n");
         cnt++;
         if (g->frame % 1 == 0) {
             g->MinDev();
@@ -619,20 +582,16 @@ int guide()
 {
     float   sum_x;
     float   sum_y;
-    int     frame_per_correction = 2;
+    int     frame_per_correction = 3353;
     int     frame_count;
     int	drizzle_dx = 0;
     int	drizzle_dy = 0;
     int	err = 0;
-    FILE	*out;
 
     Guider *g = new Guider();
 
     char buf[512];
 
-    sprintf(buf, "./data_%ld.ser", time(0));
-    out = fopen(buf, "wb");
-    write_header(out, g->width, g->height, 1000);
 
     ui_setup();
     hack_gain_upd(g);
@@ -648,9 +607,12 @@ int guide()
     sum_y = 0;
 
     int logger = 0;
+    int bad = 0;
 
     while(1) {
 restart:
+
+	bad = 0;
 
         g->GetFrame();
         if (!g->HasGuideStar()) {
@@ -665,9 +627,6 @@ restart:
         src = (ushort*)g->image.ptr<uchar>(0);
 
 
-        //fwrite(src, 1, g->width*g->height*2, out);
-
-
         hack_gain_upd(g);
 
 
@@ -676,7 +635,21 @@ restart:
             float cy;
             float total_v;
             g->Centroid(&cx, &cy, &total_v);
-            if (total_v > 0) {
+
+	    if (total_v == 0) {
+		bad++;
+	    }
+	    else 
+		bad = 0;
+
+
+	    if (bad == 10) {
+		printf("no guide star. restart\n");
+		goto restart;
+	    }
+
+            printf("centroid %f %f %f\n", cx, cy, total_v); 
+	    if (total_v > 0) {
                 float dx = cx-g->ref_x + drizzle_dx;
                 float dy = cy-g->ref_y + drizzle_dy;
                 sum_x += dx;
@@ -686,42 +659,19 @@ restart:
                 if (frame_count == frame_per_correction) {
                     sum_x = sum_x / frame_per_correction;
                     sum_y = sum_y / frame_per_correction;
-                    printf("sum %f %f\n", sum_x, sum_y);
+                    //printf("sum %f %f\n", sum_x, sum_y);
                     float tx = g->error_to_tx(sum_x, sum_y);
                     float ty = g->error_to_ty(sum_x, sum_y);
-                    sum_x = 0;
+                    printf("error %f %f\n", sum_x, sum_y); 
+		    sum_x = 0;
                     sum_y = 0;
                     frame_count = 0;
-                    //if (scope->XCommand("xneed_guiding") != 0) {
-                        g->Move(-tx * 1.0, -ty * 1.0);
-                    //}
+		    printf("move %f %f\n", -0.6*tx, -0.2*ty);
+		    //g->Move(-0.6*tx, -0.7*ty);
+		    //Wait(1);
                 }
             }
 
-            if (total_v < 15000) {
-                err++;
-                if (err > 30) {
-                    err = 0;
-                    g->ref_x = 0;
-                    g->ref_y = 0;
-                    goto restart;
-                }
-            } else {
-                err = 0;
-            }
-
-            //if (scope->XCommand("xdither") == 1) {
-                //drizzle_dx = rand()%4 - 2;
-                //drizzle_dy = rand()%4 - 2;
-            //}
-
-
-            if (logger % 50 == 0) {
-                scope->Log();
-                float temp1 = getSensorTemp();
-                printf("temp %f\n", temp1);
-
-            }
             logger++;
 
             float mult = 0.1 * cvGetTrackbarPos("mult", "video");
@@ -735,17 +685,17 @@ restart:
         DrawVal(uibm, "gain", g->gain, 1, "");
 
 
-        cv::imshow("video", uibm);
+	if (frame_count % 10 == 0) {
+        	cv::imshow("video", uibm);
 
-        char c = cvWaitKey(1);
-        if (c == 27) {
-            fseek(out, 0, SEEK_SET);
-            write_header(out, g->width, g->height, frame_count);
+        	char c = cvWaitKey(1);
+        	if (c == 27) {
 
-            stopCapture();
-            closeCamera();
-            return 0;
-        }
+            	stopCapture();
+            	closeCamera();
+            	return 0;
+        	}
+	}
     }
 }
 
@@ -758,6 +708,7 @@ int calibrate()
     float  x1, y1;
     float  x2, y2;
     float  x3, y3;
+#define N 10.0
 
     ui_setup();
     hack_gain_upd(g);
@@ -778,33 +729,34 @@ int calibrate()
 
     {
         for (int i = 0; i < 8; i++) g->GetFrame();
-        printf("x4\n");
         g->FindGuideStar();
-        printf("x5\n");
         //scope->Log();
         x1 = g->ref_x;
-       	printf("x5551\n"); 
  	y1 = g->ref_y;
-       	printf("x5552\n"); 
  	printf("v1 %f %f\n", x1, y1);
 
-        for (int i =0; i < 2; i++) g->Move(0.9, 0);
-        scope->Log();
-        cv::imshow("video", g->image);
-	printf("x6\n");
+//total move is 9 seconds in each axis.
+
+
+        for (int i = 0; i < N; i++) {
+		g->Move(0.9, 0);
+        	usleep(1000*1000); 
+       	} 
+	cv::imshow("video", g->image);
         char c = cvWaitKey(1);
         for (int i =0; i < 8; i++)
             g->GetFrame();
 
-	printf("x7\n");
         g->FindGuideStar();
         x2 = g->ref_x;
         y2 = g->ref_y;
         printf("v2 %f %f\n", x2, y2);
 
-        for (int i =0; i < 2; i++) g->Move(0.0, 0.9);
-        scope->Log();
-        cv::imshow("video", g->image);
+        for (int i = 0; i < N; i++) {
+		 g->Move(0.0, 0.9);
+ 		usleep(1000*1000);	
+       	} 
+	cv::imshow("video", g->image);
         c = cvWaitKey(1);
 
         for (int i = 0; i < 8; i++) g->GetFrame();
@@ -816,8 +768,21 @@ int calibrate()
         cv::imshow("video", g->image);
         c = cvWaitKey(1);
 
-        for (int i =0; i < 2; i++) g->Move(-0.9, -0.9);
-        scope->Log();
+        for (int i = 0; i < N; i++){
+		 g->Move(-0.9, 0);
+       		 usleep(1000*1000);
+	} 
+        for (int i = 0; i < N; i++){
+		 g->Move(0.0, -0.9);
+       		 usleep(1000*1000);
+	} 
+      
+        for (int i = 0; i < 8; i++) g->GetFrame(); 
+        g->FindGuideStar();
+        float x4 = g->ref_x;
+        float y4 = g->ref_y;
+	 
+	printf("v4 %f %f\n", x4, y4);
         stopCapture();
         closeCamera();
     }
@@ -831,10 +796,10 @@ int calibrate()
     g->mount_dx2 = (x3-x2);
     g->mount_dy2 = (y3-y2);
 
-    set_value("mount_dx1", g->mount_dx1);
-    set_value("mount_dx2", g->mount_dx2);
-    set_value("mount_dy1", g->mount_dy1);
-    set_value("mount_dy2", g->mount_dy2);
+    set_value("mount_dx1", g->mount_dx1/N);
+    set_value("mount_dx2", g->mount_dx2/N);
+    set_value("mount_dy1", g->mount_dy1/N);
+    set_value("mount_dy2", g->mount_dy2/N);
 
     return 0;
 }
@@ -906,6 +871,11 @@ int main(int argc, char **argv)
 
     scope = new Scope();
 
+    for (int i =0; i < 10; i++) {
+	printf("%d\n", i); 
+	//scope->Bump(0.1, 0.2);
+    }
+ 
     int i = 0;
 
     if (argc == 1 || strcmp(argv[1], "-h") == 0) {

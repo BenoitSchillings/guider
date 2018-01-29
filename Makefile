@@ -4,7 +4,7 @@ platform = x64
 CC = g++
 TINY = ./tinyobj/tinyxmlerror.cpp.o ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o
 OPENCV0 = -I/usr/local/include/opencv -I/usr/local/include -L/usr/local/lib -lopencv_calib3d -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_highgui -lopencv_imgproc -lopencv_ml -lopencv_objdetect -lopencv_photo -lopencv_stitching -lopencv_superres -lopencv_ts -lopencv_video -lopencv_videostab -L/usr/local/lib -lzmq 
-OPENCV = -I/usr/local/include/opencv  -lopencv_calib3d -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_highgui -lopencv_imgproc -lopencv_ml -lopencv_objdetect -lopencv_photo -lopencv_stitching -lopencv_superres  -lopencv_video -lopencv_videostab  -lzmq 
+OPENCV = -I/usr/local/include/opencv  -lopencv_calib3d -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_imgcodecs -lopencv_highgui -lopencv_imgproc -lopencv_ml -lopencv_objdetect -lopencv_photo -lopencv_stitching -lopencv_superres  -lopencv_video -lopencv_videostab  -lzmq 
 
 USB =  -I./libusb/include  -L./libusb/$(platform) -lusb-1.0  
 
@@ -25,7 +25,7 @@ endif
 ifeq ($(platform), mac32)
 CC = g++
 CFLAGS += -D_MAC -m32
-OPENCV = -lopencv_calib3d -lopencv_contrib -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_highgui -lopencv_imgproc -lopencv_legacy -lopencv_ml -lopencv_objdetect -lopencv_photo -lopencv_stitching -lopencv_ts -lopencv_video -lopencv_videostab -I/usr/local/include/opencv
+OPENCV = -lopencv_calib3d -lopencv_contrib -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_highgui -lopencv_imgproc -lopencv_legacy -lopencv_ml -lopencv_objdetect -lopencv_photo -lopencv_stitching -lopencv_ts -lopencv_video -lopencv_videostab -I/usr/local/include/opencv `pkg-config --libs opencv`
 endif
 
 ifeq ($(platform), mac64)
@@ -46,13 +46,13 @@ CFLAGS += -lrt
 endif
 
 
-all:guide174 guide174ao imager1600 monitor  scope_server vbox_to_ap focus scopestop joystick receive fake_serial
+all:guide174 guide174ao imager1600 mover1600 monitor  scope_server vbox_to_ap focus scopestop joystick receive fake_serial
 
 guide174:  AACoordinateTransformation.cpp  ser.cpp scope.cpp guide174.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
 	$(CC) -march=native -O3 guide174.cpp  AACoordinateTransformation.cpp util.cpp $(TINY) -o guide174 $(CFLAGS)  $(OPENCV) -lASICamera
 
 	
-guide174ao:  AACoordinateTransformation.cpp ao.cpp ao.h  ser.cpp scope.cpp guide174.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
+guide174ao:  AACoordinateTransformation.cpp ao.cpp ao.h  ser.cpp scope.cpp guide174ao.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
 	$(CC) -march=native -O3 guide174ao.cpp  ao.cpp AACoordinateTransformation.cpp util.cpp ~/skyx_tcp/skyx.cpp ~/skyx_tcp/sky_ip.cpp $(TINY) -o guide174ao $(CFLAGS)  $(OPENCV) -lASICamera
 
 
@@ -60,6 +60,9 @@ guide174ao:  AACoordinateTransformation.cpp ao.cpp ao.h  ser.cpp scope.cpp guide
 	
 imager1600:  AACoordinateTransformation.cpp  ser.cpp scope.cpp imager1600.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
 	$(CC) -march=native -O3 imager1600.cpp  AACoordinateTransformation.cpp util.cpp $(TINY) -o imager1600 $(CFLAGS)  $(OPENCV) -lASICamera
+
+mover1600:  AACoordinateTransformation.cpp  ser.cpp scope.cpp mover1600.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
+	$(CC) -march=native -O3 mover1600.cpp  AACoordinateTransformation.cpp util.cpp $(TINY) -o mover1600 $(CFLAGS)  $(OPENCV) -lASICamera
 
 scopestop:  AACoordinateTransformation.cpp  scope.cpp scopestop.cpp util.cpp ./tinyobj/tinystr.cpp.o ./tinyobj/tinyxmlparser.cpp.o ./tinyobj/tinyxml.cpp.o ./tinyobj/tinyxmlerror.cpp.o
 	$(CC) -march=native -O3 scopestop.cpp  AACoordinateTransformation.cpp util.cpp $(TINY) -o scopestop $(CFLAGS)  $(OPENCV)

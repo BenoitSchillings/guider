@@ -7,6 +7,8 @@ char name[14] = {0x4c, 0x55, 0x43, 0x41, 0x4d, 0x2d, 0x52, 0x45, 0x43, 0x4f, 0x5
 void write_header(FILE *f, int width, int height, int cnt)
 {
 	uint32_t tmp;	
+
+	fseek(f, 0, SEEK_SET);
 //0
 	fwrite(name, 14, 1, f);
 //14	

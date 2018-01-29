@@ -234,8 +234,8 @@ void Guider::MinDev()
 
 Guider::Guider()
 {
-    width = 1400;
-    height = 1200;
+    width = 3096/2;
+    height = 2080/2; 
     frame = 0;
     background = 0;
     dev = 100;
@@ -269,6 +269,7 @@ void	Guider::Move(float dx, float dy)
 
     printf("%f %f\n", dx, dy);
     scope->Bump(dx, dy);
+    
     return;
 
     if (fabs(dx) < 0.02) {
@@ -315,6 +316,7 @@ bool Guider::FindGuideStar()
     int	cx = width / 2;
     int	cy = height / 2;
 
+printf("fg\n");
     for (y = cy - 300; y < cy + 300; y++) {
         for (x = cx - 400; x < cx + 400; x++) {
             int v = temp_image.at<unsigned short>(y, x) +
@@ -372,17 +374,14 @@ void Guider::InitCam(int cx, int cy, int width, int height)
     setValue(CONTROL_GAIN, 0, false);
     printf("max %d\n", getMax(CONTROL_BANDWIDTHOVERLOAD));
 
-    setValue(CONTROL_BANDWIDTHOVERLOAD, 64, false); //lowest transfer speed
+    setValue(CONTROL_BANDWIDTHOVERLOAD, 74, true); //lowest transfer speed
     setValue(CONTROL_EXPOSURE, 10, false);
     setValue(CONTROL_HIGHSPEED, 1, false);
-    setValue(CONTROL_COOLER_ON, 1, false);
-    setValue(CONTROL_TARGETTEMP,-150, false);
+    //setValue(CONTROL_COOLER_ON, 1, false);
+    //setValue(CONTROL_TARGETTEMP,-150, false);
     bool foo; 
     int temp = getValue(CONTROL_TEMPERATURE, &foo);
     printf("temp = %d\n", temp);
-    //float temp1 = getSensorTemp();
-
-    setStartPos(360, 800);
 }
 
 //--------------------------------------------------------------------------------------
@@ -393,7 +392,7 @@ void Guider::Centroid(float*cx, float*cy, float*total_v)
     float cnt;
 
     MinDev();
-    //printf("%f %f\n", background, dev);
+    printf("centroid %f %f\n", background, dev);
 
     cnt = 0.0;
 
@@ -428,7 +427,7 @@ void Guider::Centroid(float*cx, float*cy, float*total_v)
     sum_y = sum_y / total;
     *cx = sum_x;
     *cy = sum_y;
-    //printf("%f %d\n", total, pcnt);
+    printf("%f %d\n", total, pcnt);
     if (pcnt < 4) total = 0;
     *total_v = total;
 }
@@ -536,6 +535,7 @@ int find_guide()
 
     g = new Guider();
 
+    usleep(1000*1000*6);
     ui_setup();
     hack_gain_upd(g);
 
@@ -544,10 +544,8 @@ int find_guide()
     int cnt = 0;
 
     while(1) {
-        printf("p0\n");
         g->GetFrame();
 
-        printf("p1\n");
         cnt++;
         if (g->frame % 1 == 0) {
             g->MinDev();
@@ -616,7 +614,7 @@ int guide()
 {
     float   sum_x;
     float   sum_y;
-    int     frame_per_correction = 2;
+    int     frame_per_correction = 4;
     int     frame_count;
     int	drizzle_dx = 0;
     int	drizzle_dy = 0;
@@ -690,8 +688,9 @@ restart:
                     sum_y = 0;
                     frame_count = 0;
                     if (scope->XCommand("xneed_guiding") != 0) {
-                        g->Move(-tx * 1.0, -ty * 1.0);
-                    }
+                        g->Move(-tx * 0.2, -ty * 0.2);
+                   	usleep(2800000); 
+		    }
                 }
             }
 
@@ -713,12 +712,12 @@ restart:
             }
 
 
-            if (logger % 50 == 0) {
-                scope->Log();
-                float temp1 = getSensorTemp();
-                printf("temp %f\n", temp1);
-
-            }
+            //if (logger % 50 == 0) {
+                //scope->Log();
+                //float temp1 = getSensorTemp();
+                //printf("temp %f\n", temp1);
+//
+            //}
             logger++;
 
             float mult = 0.1 * cvGetTrackbarPos("mult", "video");
@@ -785,7 +784,10 @@ int calibrate()
        	printf("x5552]n"); 
  	printf("v1 %f %f\n", x1, y1);
 
-        for (int i =0; i < 2; i++) g->Move(0.9, 0);
+        for (int i =0; i < 5; i++) {
+		g->Move(0.9, 0);
+		Wait(1);	
+	}
         scope->Log();
         cv::imshow("video", g->image);
 	printf("x6\n");
@@ -799,8 +801,11 @@ int calibrate()
         y2 = g->ref_y;
         printf("v2 %f %f\n", x2, y2);
 
-        for (int i =0; i < 2; i++) g->Move(0.0, 0.9);
-        scope->Log();
+        for (int i =0; i < 5; i++) {
+		 g->Move(0.0, 0.9);
+       		Wait(1);	
+	} 
+	scope->Log();
         cv::imshow("video", g->image);
         c = cvWaitKey(1);
 
@@ -813,8 +818,11 @@ int calibrate()
         cv::imshow("video", g->image);
         c = cvWaitKey(1);
 
-        for (int i =0; i < 2; i++) g->Move(-0.9, -0.9);
-        scope->Log();
+        for (int i =0; i < 5; i++) {
+		 g->Move(-0.9, -0.9);
+		 Wait(1);
+       	} 
+	scope->Log();
         stopCapture();
         closeCamera();
     }
@@ -901,7 +909,7 @@ int main(int argc, char **argv)
 {
     signal(SIGINT, intHandler);
 
-    scope = new Scope();
+    //scope = new Scope();
     //scope->Init();
     //scope->LongFormat();
     //scope->Siderial();
